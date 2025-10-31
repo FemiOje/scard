@@ -1,10 +1,10 @@
 [world]
 name = "Scard"
-description = "Scard"
+description = "Scar'd"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/scard"
-seed = "scard"
+seed = "scard1"
 
 [namespace]
 default = "scard"
@@ -13,12 +13,11 @@ default = "scard"
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 account_address = "0x05ef6460b5165a94bc342a57825058c039e6f6c17e3c2daf6350e30cc58c8bd6"
 keystore_path = "deployments/keystore.json"
-world_address = "0x0626a357a9e415e7f16f3ef0bdd406a2536323462e328d3e4604cef106434216"
+world_address = "0x066e4d35596f894f2fff6884bf28bd4509a391eb31060176eedb9e5283cd8142"
 
 [writers]
 "scard" = [
-    "scard-actions",
-    # "scard-game_systems", 
+    "scard-game_systems", 
     # "scard-renderer_systems",
     # "scard-game_token_systems"
 ]

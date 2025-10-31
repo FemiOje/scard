@@ -1,46 +1,61 @@
 import type { SchemaType as ISchemaType } from "@dojoengine/sdk";
 
-import { CairoCustomEnum, CairoOption, CairoOptionVariant, BigNumberish } from 'starknet';
+import { CairoCustomEnum, BigNumberish } from 'starknet';
 
-// Type definition for `scard::models::DirectionsAvailable` struct
-export interface DirectionsAvailable {
-	player: string;
-	directions: Array<DirectionEnum>;
+// Type definition for `scard::models::beast::BeastEncounter` struct
+export interface BeastEncounter {
+	game_id: BigNumberish;
+	beast_type: BigNumberish;
+	attack_points: BigNumberish;
+	damage_points: BigNumberish;
 }
 
-// Type definition for `scard::models::Moves` struct
-export interface Moves {
-	player: string;
-	remaining: BigNumberish;
-	last_direction: CairoOption<DirectionEnum>;
-	can_move: boolean;
+// Type definition for `scard::models::encounter::CurrentEncounter` struct
+export interface CurrentEncounter {
+	game_id: BigNumberish;
+	encounter_type: BigNumberish;
 }
 
-// Type definition for `scard::models::Position` struct
+// Type definition for `scard::models::player::Player` struct
+export interface Player {
+	game_id: BigNumberish;
+	health: BigNumberish;
+	damage_points: BigNumberish;
+	attack_points: BigNumberish;
+	has_free_flee: boolean;
+	has_free_attack: boolean;
+}
+
+// Type definition for `scard::models::position::Position` struct
 export interface Position {
-	player: string;
-	vec: Vec2;
-}
-
-// Type definition for `scard::models::PositionCount` struct
-export interface PositionCount {
-	identity: string;
-	position: Array<[BigNumberish, BigNumberish]>;
-}
-
-// Type definition for `scard::models::Vec2` struct
-export interface Vec2 {
+	game_id: BigNumberish;
 	x: BigNumberish;
 	y: BigNumberish;
 }
 
-// Type definition for `scard::systems::actions::actions::Moved` struct
-export interface Moved {
-	player: string;
-	direction: DirectionEnum;
+// Type definition for `scard::systems::game::contracts::game_systems::EncounterGenerated` struct
+export interface EncounterGenerated {
+	game_id: BigNumberish;
+	encounter_type: BigNumberish;
 }
 
-// Type definition for `scard::models::Direction` enum
+// Type definition for `scard::systems::game::contracts::game_systems::GameCreated` struct
+export interface GameCreated {
+	game_id: BigNumberish;
+	player_health: BigNumberish;
+	start_x: BigNumberish;
+	start_y: BigNumberish;
+}
+
+// Type definition for `scard::systems::game::contracts::game_systems::Moved` struct
+export interface Moved {
+	game_id: BigNumberish;
+	direction: DirectionEnum;
+	new_x: BigNumberish;
+	new_y: BigNumberish;
+}
+
+// Type definition for `scard::models::position::Direction` enum
 export const direction = [
 	'Left',
 	'Right',
@@ -52,58 +67,69 @@ export type DirectionEnum = CairoCustomEnum;
 
 export interface SchemaType extends ISchemaType {
 	scard: {
-		DirectionsAvailable: DirectionsAvailable,
-		Moves: Moves,
+		BeastEncounter: BeastEncounter,
+		CurrentEncounter: CurrentEncounter,
+		Player: Player,
 		Position: Position,
-		PositionCount: PositionCount,
-		Vec2: Vec2,
+		EncounterGenerated: EncounterGenerated,
+		GameCreated: GameCreated,
 		Moved: Moved,
 	},
 }
 export const schema: SchemaType = {
 	scard: {
-		DirectionsAvailable: {
-			player: "",
-			directions: [new CairoCustomEnum({ 
-					Left: "",
-				Right: undefined,
-				Up: undefined,
-				Down: undefined, })],
+		BeastEncounter: {
+			game_id: 0,
+			beast_type: 0,
+			attack_points: 0,
+			damage_points: 0,
 		},
-		Moves: {
-			player: "",
-			remaining: 0,
-			last_direction: new CairoOption(CairoOptionVariant.None),
-			can_move: false,
+		CurrentEncounter: {
+			game_id: 0,
+			encounter_type: 0,
+		},
+		Player: {
+			game_id: 0,
+			health: 0,
+			damage_points: 0,
+			attack_points: 0,
+			has_free_flee: false,
+			has_free_attack: false,
 		},
 		Position: {
-			player: "",
-		vec: { x: 0, y: 0, },
-		},
-		PositionCount: {
-			identity: "",
-			position: [[0, 0]],
-		},
-		Vec2: {
+			game_id: 0,
 			x: 0,
 			y: 0,
 		},
+		EncounterGenerated: {
+			game_id: 0,
+			encounter_type: 0,
+		},
+		GameCreated: {
+			game_id: 0,
+			player_health: 0,
+			start_x: 0,
+			start_y: 0,
+		},
 		Moved: {
-			player: "",
+			game_id: 0,
 		direction: new CairoCustomEnum({ 
 					Left: "",
 				Right: undefined,
 				Up: undefined,
 				Down: undefined, }),
+			new_x: 0,
+			new_y: 0,
 		},
 	},
 };
 export enum ModelsMapping {
-	Direction = 'scard-Direction',
-	DirectionsAvailable = 'scard-DirectionsAvailable',
-	Moves = 'scard-Moves',
+	BeastEncounter = 'scard-BeastEncounter',
+	CurrentEncounter = 'scard-CurrentEncounter',
+	Player = 'scard-Player',
 	Position = 'scard-Position',
-	PositionCount = 'scard-PositionCount',
-	Vec2 = 'scard-Vec2',
+	Direction = 'scard-Direction',
+	EncounterGenerated = 'scard-EncounterGenerated',
+	GameCreated = 'scard-GameCreated',
 	Moved = 'scard-Moved',
 }

@@ -1,191 +1,203 @@
-import { useAccount, useConnect, useDisconnect } from "@starknet-react/core";
-import { useDojoSDK } from "@dojoengine/sdk/react";
+import { useAccount, useConnect } from "@starknet-react/core";
 import { useEffect, useState, useMemo } from "react";
 import ControllerConnector from "@cartridge/connector/controller";
-import { GameActions } from "./components/GameActions";
+import { HalloweenGrid } from "./components/HalloweenGrid";
+import { SplashScreen } from "./components/SplashScreen";
+import { useGameState } from "./hooks/useGameState";
 import "./App.css";
 
 function App() {
-    const { account, address, status, connector } = useAccount();
-    const { connect, connectors } = useConnect();
-    const { disconnect } = useDisconnect();
-    const { client } = useDojoSDK();
-    const [username, setUsername] = useState<string | null>(null);
-    const [isControllerReady, setIsControllerReady] = useState(false);
+  const { address, status, connector } = useAccount();
+  const { connect, connectors } = useConnect();
+  const [username, setUsername] = useState<string | null>(null);
+  const [isControllerReady, setIsControllerReady] = useState(false);
+  const [showGame, setShowGame] = useState(false);
 
-    const controllerConnector = useMemo(
-        () => ControllerConnector.fromConnectors(connectors),
-        [connectors]
-    );
+  // Game state management
+  const {
+    playerPosition,
+    isLoading: isGameLoading,
+    error: gameError,
+    createGame,
+    movePlayer,
+  } = useGameState();
 
-    // Check if controller is ready
-    useEffect(() => {
-        const checkReady = () => {
-            try {
-                if (controllerConnector) {
-                    setIsControllerReady(controllerConnector.isReady());
-                }
-            } catch (e) {
-                console.error("Error checking controller readiness:", e);
-            }
-        };
+  const controllerConnector = useMemo(
+    () => ControllerConnector.fromConnectors(connectors),
+    [connectors]
+  );
 
-        checkReady();
-        const interval = setInterval(checkReady, 1000);
-        return () => clearInterval(interval);
-    }, [controllerConnector]);
-
-    // Fetch username when connected
-    useEffect(() => {
-        async function fetchUsername() {
-            try {
-                const name = await (connector as ControllerConnector)?.username();
-                if (name) setUsername(name);
-            } catch (error) {
-                console.error("Error fetching username:", error);
-            }
+  // Check if controller is ready
+  useEffect(() => {
+    const checkReady = () => {
+      try {
+        if (controllerConnector) {
+          setIsControllerReady(controllerConnector.isReady());
         }
-        if (connector && status === "connected") {
-            fetchUsername();
-        }
-    }, [connector, status]);
+      } catch (e) {
+        console.error("Error checking controller readiness:", e);
+      }
+    };
 
-    return (
-        <div className="app">
-            <h1>SCARD - Starknet Card Game</h1>
+    checkReady();
+    const interval = setInterval(checkReady, 1000);
+    return () => clearInterval(interval);
+  }, [controllerConnector]);
 
-            {/* Dojo SDK Status */}
-            <div style={{ marginBottom: "2rem" }}>
-                {client ? (
-                    <p style={{ color: "green" }}>✅ Dojo SDK initialized successfully!</p>
-                ) : (
-                    <p style={{ color: "red" }}>❌ Failed to initialize Dojo SDK</p>
-                )}
-            </div>
+  // Fetch username when connected
+  useEffect(() => {
+    async function fetchUsername() {
+      try {
+        const name = await (connector as ControllerConnector)?.username();
+        if (name) setUsername(name);
+      } catch (error) {
+        console.error("Error fetching username:", error);
+      }
+    }
+    if (connector && status === "connected") {
+      fetchUsername();
+    }
+  }, [connector, status]);
 
-            {/* Wallet Connection Section */}
-            <div style={{
-                border: "2px solid #333",
-                borderRadius: "8px",
-                padding: "2rem",
-                marginBottom: "2rem",
-                maxWidth: "600px",
-                margin: "0 auto 2rem"
-            }}>
-                <h2>Cartridge Wallet</h2>
-                
-                {status === "connected" && address ? (
-                    <div>
-                        <p><strong>Status:</strong> <span style={{ color: "green" }}>Connected</span></p>
-                        {username && <p><strong>Username:</strong> {username}</p>}
-                        <p><strong>Address:</strong></p>
-                        <code style={{ 
-                            display: "block", 
-                            padding: "0.5rem", 
-                            background: "#f5f5f5", 
-                            borderRadius: "4px",
-                            wordBreak: "break-all",
-                            fontSize: "0.9rem"
-                        }}>
-                            {address}
-                        </code>
-                        
-                        <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                            <button
-                                onClick={() => disconnect()}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    backgroundColor: "#dc3545",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    fontSize: "1rem"
-                                }}
-                            >
-                                Disconnect
-                            </button>
-                            <button
-                                onClick={() => (connector as ControllerConnector).controller.openProfile()}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    backgroundColor: "#007bff",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    fontSize: "1rem"
-                                }}
-                            >
-                                Open Profile
-                            </button>
-                            <button
-                                onClick={() => (connector as ControllerConnector).controller.openSettings()}
-                                style={{
-                                    padding: "0.75rem 1.5rem",
-                                    backgroundColor: "#6c757d",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer",
-                                    fontSize: "1rem"
-                                }}
-                            >
-                                Settings
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div>
-                        <p><strong>Status:</strong> <span style={{ color: "orange" }}>Not Connected</span></p>
-                        <p style={{ marginBottom: "1rem", color: "#666" }}>
-                            Connect your Cartridge wallet to interact with the game on Sepolia testnet.
-                        </p>
-                        <button
-                            onClick={() => connect({ connector: controllerConnector })}
-                            disabled={!isControllerReady}
-                            style={{
-                                padding: "0.75rem 1.5rem",
-                                backgroundColor: isControllerReady ? "#28a745" : "#6c757d",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor: isControllerReady ? "pointer" : "not-allowed",
-                                fontSize: "1rem",
-                                fontWeight: "bold"
-                            }}
-                        >
-                            {isControllerReady ? "Connect Cartridge Wallet" : "Loading..."}
-                        </button>
-                    </div>
-                )}
-            </div>
+  return (
+    <div style={{ minHeight: "100vh", position: "relative" }}>
+      {/* Header with Wallet Button */}
+      <header
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          padding: "1rem 2rem",
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          zIndex: 100,
+          background: "rgba(0, 0, 0, 0.5)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid rgba(255, 107, 53, 0.3)",
+        }}
+      >
+        {status === "connected" && address ? (
+          <button
+            onClick={() =>
+              (connector as ControllerConnector).controller.openProfile()
+            }
+            style={{
+              padding: "0.75rem 1.5rem",
+              backgroundColor: "rgba(255, 107, 53, 0.9)",
+              color: "white",
+              border: "2px solid #FF6B35",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              boxShadow: "0 0 20px rgba(255, 107, 53, 0.4)",
+              transition: "all 0.3s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(255, 140, 0, 0.9)";
+              e.currentTarget.style.transform = "scale(1.05)";
+              e.currentTarget.style.boxShadow =
+                "0 0 30px rgba(255, 107, 53, 0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "rgba(255, 107, 53, 0.9)";
+              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.boxShadow =
+                "0 0 20px rgba(255, 107, 53, 0.4)";
+            }}
+          >
+            <span>👤</span>
+            <span>
+              {username || address.slice(0, 6) + "..." + address.slice(-4)}
+            </span>
+          </button>
+        ) : (
+          <button
+            onClick={() => connect({ connector: controllerConnector })}
+            disabled={!isControllerReady}
+            style={{
+              padding: "0.75rem 1.5rem",
+              backgroundColor: isControllerReady
+                ? "rgba(255, 107, 53, 0.9)"
+                : "rgba(108, 117, 125, 0.9)",
+              color: "white",
+              border: isControllerReady
+                ? "2px solid #FF6B35"
+                : "2px solid #6c757d",
+              borderRadius: "8px",
+              cursor: isControllerReady ? "pointer" : "not-allowed",
+              fontSize: "1rem",
+              fontWeight: "bold",
+              boxShadow: isControllerReady
+                ? "0 0 20px rgba(255, 107, 53, 0.4)"
+                : "none",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              if (isControllerReady) {
+                e.currentTarget.style.backgroundColor =
+                  "rgba(255, 140, 0, 0.9)";
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 30px rgba(255, 107, 53, 0.6)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isControllerReady) {
+                e.currentTarget.style.backgroundColor =
+                  "rgba(255, 107, 53, 0.9)";
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 20px rgba(255, 107, 53, 0.4)";
+              }
+            }}
+          >
+            {isControllerReady ? "🔌 Connect Wallet" : "Loading..."}
+          </button>
+        )}
+      </header>
 
-            {/* Game Actions Component */}
-            <GameActions />
+      {/* Show Splash Screen or Game */}
+      {showGame ? (
+        <HalloweenGrid
+          playerPosition={playerPosition}
+          onMove={movePlayer}
+          isLoading={isGameLoading}
+        />
+      ) : (
+        <SplashScreen
+          onStartNewGame={() => setShowGame(true)}
+          onCreateGame={createGame}
+          isCreatingGame={isGameLoading}
+        />
+      )}
 
-            {/* Game Info */}
-            <div style={{ marginTop: "2rem", color: "#666" }}>
-                <p>
-                    <strong>Network:</strong> Sepolia Testnet
-                </p>
-                <p>
-                    <strong>Game:</strong> SCARD on Dojo
-                </p>
-            </div>
-
-            <div style={{ marginTop: "2rem" }}>
-                <a
-                    href="https://book.dojoengine.org/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "#007bff", textDecoration: "none" }}
-                >
-                    📖 Learn Dojo
-                </a>
-            </div>
+      {/* Error display */}
+      {gameError && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "2rem",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(220, 53, 69, 0.9)",
+            color: "white",
+            padding: "1rem 2rem",
+            borderRadius: "8px",
+            zIndex: 1001,
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+          }}
+        >
+          ⚠️ Error: {gameError}
         </div>
-    );
+      )}
+    </div>
+  );
 }
 
 export default App;

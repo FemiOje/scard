@@ -7,30 +7,28 @@ import {
 } from "@starknet-react/core";
 import ControllerConnector from "@cartridge/connector/controller";
 import { SessionPolicies } from "@cartridge/controller";
+import manifest from "../../contracts/manifest_sepolia.json";
 
-// ETH contract address on Starknet
-export const ETH_CONTRACT_ADDRESS =
-  "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7";
+const scardGameContract = manifest.contracts.find(
+  (contract) => contract.tag === "scard-game_systems"
+);
 
-// Scard actions contract address from manifest_sepolia.json
-const SCARD_ACTIONS_CONTRACT =
-  "0x404679ea759d1df51e978512971f4d5dc8df79dc6bc3b9906f43230195480ba";
+if (!scardGameContract?.address) {
+  throw new Error(
+    "Scard game contract not found in manifest. Please ensure manifest_sepolia.json contains the scard-game_systems contract."
+  );
+}
 
-// Define session policies for the scard game
+const SCARD_GAME_CONTRACT = scardGameContract.address;
+
 const policies: SessionPolicies = {
   contracts: {
-    // Allow ETH transfers for gas and transactions
-    [ETH_CONTRACT_ADDRESS]: {
+    [SCARD_GAME_CONTRACT]: {
       methods: [
-        { name: "approve", entrypoint: "approve" },
-        { name: "transfer", entrypoint: "transfer" },
-      ],
-    },
-    // Allow scard game actions
-    [SCARD_ACTIONS_CONTRACT]: {
-      methods: [
-        { name: "spawn", entrypoint: "spawn" },
+        { name: "create_game", entrypoint: "create_game" },
         { name: "move", entrypoint: "move" },
+        { name: "fight", entrypoint: "fight" },
+        { name: "flee", entrypoint: "flee" },
       ],
     },
   },

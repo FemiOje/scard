@@ -1,8 +1,8 @@
 {
   "world": {
     "class_hash": "0x57994b6a75fad550ca18b41ee82e2110e158c59028c4478109a67965a0e5b1e",
-    "address": "0x626a357a9e415e7f16f3ef0bdd406a2536323462e328d3e4604cef106434216",
-    "seed": "scard",
+    "address": "0x66e4d35596f894f2fff6884bf28bd4509a391eb31060176eedb9e5283cd8142",
+    "seed": "scard1",
     "name": "Scard",
     "entrypoints": [
       "uuid",
@@ -1479,12 +1479,12 @@
   },
   "contracts": [
     {
-      "address": "0x404679ea759d1df51e978512971f4d5dc8df79dc6bc3b9906f43230195480ba",
-      "class_hash": "0x289c43c00e48f46905be4cc3ca53c6938cd166bfa9756dc9dc06a730f0df636",
+      "address": "0x5f1a6e950cd76dd1d3384459fcf39b711dd8169960d932e43444d1501911c2f",
+      "class_hash": "0x266623c4c036e19f5d02abda9c56747ba00763cc7551f3f29ed6b2564694bd7",
       "abi": [
         {
           "type": "impl",
-          "name": "actions__ContractImpl",
+          "name": "game_systems__ContractImpl",
           "interface_name": "dojo::contract::interface::IContract"
         },
         {
@@ -1534,12 +1534,12 @@
         },
         {
           "type": "impl",
-          "name": "ActionsImpl",
-          "interface_name": "scard::systems::actions::IActions"
+          "name": "GameSystemsImpl",
+          "interface_name": "scard::systems::game::contracts::IGameSystems"
         },
         {
           "type": "enum",
-          "name": "scard::models::Direction",
+          "name": "scard::models::position::Direction",
           "variants": [
             {
               "name": "Left",
@@ -1561,12 +1561,17 @@
         },
         {
           "type": "interface",
-          "name": "scard::systems::actions::IActions",
+          "name": "scard::systems::game::contracts::IGameSystems",
           "items": [
             {
               "type": "function",
-              "name": "spawn",
-              "inputs": [],
+              "name": "create_game",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u64"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             },
@@ -1575,8 +1580,36 @@
               "name": "move",
               "inputs": [
                 {
+                  "name": "game_id",
+                  "type": "core::integer::u64"
+                },
+                {
                   "name": "direction",
-                  "type": "scard::models::Direction"
+                  "type": "scard::models::position::Direction"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "fight",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "flee",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u64"
                 }
               ],
               "outputs": [],
@@ -1683,7 +1716,7 @@
         },
         {
           "type": "event",
-          "name": "scard::systems::actions::actions::Event",
+          "name": "scard::systems::game::contracts::game_systems::Event",
           "kind": "enum",
           "variants": [
             {
@@ -1700,11 +1733,13 @@
         }
       ],
       "init_calldata": [],
-      "tag": "scard-actions",
-      "selector": "0xfbd376b4a20657bd6c818c38076d8d7f1d20a2a9c16084eab1159a8f145f0c",
+      "tag": "scard-game_systems",
+      "selector": "0x632e4c0bb607dbdba0d8d26a31590128b434b2fa4307a441e6ea8ece1e377e5",
       "systems": [
-        "spawn",
+        "create_game",
         "move",
+        "fight",
+        "flee",
         "upgrade"
       ]
     }
@@ -1713,33 +1748,45 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x2a2bb76572d51a53ff6bc0a8505cad599ca96a677054258fc3bd5f74bd8f87d",
-      "tag": "scard-DirectionsAvailable",
-      "selector": "0x69ccfdf611b09cd83ae30c52ab8666e01e02bea39933bfe179ee43509ca9910"
+      "class_hash": "0x1282934d48b51bef6699e7190fa82f91bb907c335d894fd332e0a4a95597c4f",
+      "tag": "scard-BeastEncounter",
+      "selector": "0x6d82f4d822105cfc9c3eb7379614add10b7d8d16f02dcd9fb73b8a6251b97b"
     },
     {
       "members": [],
-      "class_hash": "0x3f103aadd621cc62bd5aa3d0d4db3a514758cbd9226e8943f0666260d33a514",
-      "tag": "scard-Moves",
-      "selector": "0x2b25034b27f0b7afe767d5135d5adfbb120e44c0d40c169247e35686333464c"
+      "class_hash": "0x56f8d7f267c3f2a3f2777d2ad293c775bafbc01fb75692522ea10683c5154d2",
+      "tag": "scard-CurrentEncounter",
+      "selector": "0x7e5421d1146fe9acdb5bcce1017c5b74d4b880d9db2c0d7c9fc6a45d3e63da8"
     },
     {
       "members": [],
-      "class_hash": "0x6016e98e66bba12c4c31a8ec9d2eb4b83c6b3182a857449f46bd19a30bb85a1",
+      "class_hash": "0x2d5549b407e67badfed4ee48758d19f43f3b6fb6523b8104e18dec35de777cb",
+      "tag": "scard-Player",
+      "selector": "0x259039b0ec9b4d663baa64431f0f08a3f93bfb88335224502d8eeab6ce02b94"
+    },
+    {
+      "members": [],
+      "class_hash": "0x20b2dac3b565db9be6de866913af3dbdd0dc0fd5cc9f8e6992e2683aea65a47",
       "tag": "scard-Position",
       "selector": "0x31832a3ddf31607b9e5095e50e1629483497be5bc558df36408df30474e016a"
-    },
-    {
-      "members": [],
-      "class_hash": "0x399225f001155e2f165a3d2b96b25a3fe967edd904b20aa1d7580fa02f7c94c",
-      "tag": "scard-PositionCount",
-      "selector": "0x1e1ac9128eebbf679ed7729a8c5057aa687a5eda06c5c9662bd8bddc021964d"
     }
   ],
   "events": [
     {
       "members": [],
-      "class_hash": "0x47659a707c77b6ea5fdb94e15193810ff00c20915ca38c0d9c699c85db0c89",
+      "class_hash": "0x35097bd0139751539031dfc75f2d8d466f5f65222cea3f099863f2cdaf878c7",
+      "tag": "scard-EncounterGenerated",
+      "selector": "0x5cc584127b92b5c877561ded62bc6638e757366eb34b9728634f63e5b29369b"
+    },
+    {
+      "members": [],
+      "class_hash": "0x75e09eb11dca8b6d32d04d31955dcd6c7a749aacd69fbb042546b29e2f356c4",
+      "tag": "scard-GameCreated",
+      "selector": "0xd9acd4d7b54dfe4550947abc4f8b51d3ab99a4819e6f0d0c4018c6b000c665"
+    },
+    {
+      "members": [],
+      "class_hash": "0x50323cc1e750d87ca707d44d70978f4e494b2dce28bd190f7424fbd225429c1",
       "tag": "scard-Moved",
       "selector": "0x75c78640b9cda407c709158c9f35fb54262ac9dd067f006d6d8eb22ee4a3de6"
     }
