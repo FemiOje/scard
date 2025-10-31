@@ -1,99 +1,98 @@
 #[cfg(test)]
 mod tests {
-    use dojo::model::{ModelStorage, ModelStorageTest};
-    use dojo::world::{WorldStorageTrait, world};
-    use dojo_cairo_test::{
-        ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait,
-        spawn_test_world,
-    };
-    use scard::models::{Direction, Moves, Position, m_Moves, m_Position};
-    use scard::systems::actions::{IActionsDispatcher, IActionsDispatcherTrait, actions};
-    use starknet::ContractAddress;
+    // Basic tests for model functionality without world integration
+    use scard::models::{PositionTrait, Direction, PlayerTrait};
 
-    fn namespace_def() -> NamespaceDef {
-        let ndef = NamespaceDef {
-            namespace: "scard",
-            resources: [
-                TestResource::Model(m_Position::TEST_CLASS_HASH),
-                TestResource::Model(m_Moves::TEST_CLASS_HASH),
-                TestResource::Event(actions::e_Moved::TEST_CLASS_HASH),
-                TestResource::Contract(actions::TEST_CLASS_HASH),
-            ]
-                .span(),
-        };
-
-        ndef
-    }
-
-    fn contract_defs() -> Span<ContractDef> {
-        [
-            ContractDefTrait::new(@"scard", @"actions")
-                .with_writer_of([dojo::utils::bytearray_hash(@"scard")].span())
-        ]
-            .span()
+    #[test]
+    fn test_position_creation() {
+        let position = PositionTrait::new(1, 10, 20);
+        assert(position.game_id == 1, 'wrong game_id');
+        assert(position.x == 10, 'wrong x');
+        assert(position.y == 20, 'wrong y');
     }
 
     #[test]
-    fn test_world_test_set() {
-        // Initialize test environment
-        let caller: ContractAddress = 0.try_into().unwrap();
-        let ndef = namespace_def();
+    fn test_position_movement() {
+        let mut position = PositionTrait::new(1, 10, 10);
+        
+        position.move_in_direction(Direction::Right);
+        assert(position.x == 11, 'move right failed');
+        assert(position.y == 10, 'y should not change');
 
-        // Register the resources.
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
+        position.move_in_direction(Direction::Down);
+        assert(position.x == 11, 'x should not change');
+        assert(position.y == 11, 'move down failed');
 
-        // Ensures permissions and initializations are synced.
-        world.sync_perms_and_inits(contract_defs());
+        position.move_in_direction(Direction::Left);
+        assert(position.x == 10, 'move left failed');
 
-        // Test initial position
-        let mut position: Position = world.read_model(caller);
-        assert(position.vec.x == 0 && position.vec.y == 0, 'initial position wrong');
-
-        // Test write_model_test
-        position.vec.x = 122;
-        position.vec.y = 88;
-
-        world.write_model_test(@position);
-
-        let mut position: Position = world.read_model(caller);
-        assert(position.vec.y == 88, 'write_value_from_id failed');
-
-        // Test model deletion
-        world.erase_model(@position);
-        let position: Position = world.read_model(caller);
-        assert(position.vec.x == 0 && position.vec.y == 0, 'erase_model failed');
+        position.move_in_direction(Direction::Up);
+        assert(position.y == 10, 'move up failed');
     }
 
     #[test]
-    #[available_gas(30000000)]
-    fn test_move() {
-        let caller: ContractAddress = 0.try_into().unwrap();
+    fn test_position_boundary() {
+        let mut position = PositionTrait::new(1, 0, 0);
+        
+        position.move_in_direction(Direction::Left);
+        assert(position.x == 0, 'should not go negative x');
 
-        let ndef = namespace_def();
-        let mut world = spawn_test_world(world::TEST_CLASS_HASH, [ndef].span());
-        world.sync_perms_and_inits(contract_defs());
+        position.move_in_direction(Direction::Up);
+        assert(position.y == 0, 'should not go negative y');
+    }
 
-        let (contract_address, _) = world.dns(@"actions").unwrap();
-        let actions_system = IActionsDispatcher { contract_address };
+    #[test]
+    fn test_player_creation() {
+        let player = PlayerTrait::new(1, 100, 20, 10);
+        assert(player.game_id == 1, 'wrong game_id');
+        assert(player.health == 100, 'wrong health');
+        assert(player.attack_points == 20, 'wrong attack');
+        assert(player.damage_points == 10, 'wrong damage');
+        assert(!player.has_free_flee, 'should not have free flee');
+        assert(!player.has_free_attack, 'should not have free attack');
+        assert(player.is_alive(), 'player should be alive');
+    }
 
-        actions_system.spawn();
-        let initial_moves: Moves = world.read_model(caller);
-        let initial_position: Position = world.read_model(caller);
+    #[test]
+    fn test_player_damage() {
+        let mut player = PlayerTrait::new(1, 100, 20, 10);
+        player.apply_damage(30);
+        assert(player.health == 70, 'health should be 70');
+        assert(player.is_alive(), 'player should still be alive');
 
-        assert(
-            initial_position.vec.x == 10 && initial_position.vec.y == 10, 'wrong initial position',
-        );
+        player.apply_damage(80);
+        assert(player.health == 0, 'health should be 0');
+        assert(!player.is_alive(), 'player should be dead');
+    }
 
-        actions_system.move(Direction::Right.into());
+    #[test]
+    fn test_player_heal() {
+        let mut player = PlayerTrait::new(1, 50, 20, 10);
+        player.heal(20);
+        assert(player.health == 70, 'health should be 70');
+    }
 
-        let moves: Moves = world.read_model(caller);
-        let right_dir_felt: felt252 = Direction::Right.into();
+    #[test]
+    fn test_player_abilities() {
+        let mut player = PlayerTrait::new(1, 100, 20, 10);
+        player.grant_free_flee();
+        assert(player.has_free_flee, 'should have free flee');
+        
+        player.grant_free_attack();
+        assert(player.has_free_attack, 'should have free attack');
+    }
 
-        assert(moves.remaining == initial_moves.remaining - 1, 'moves is wrong');
-        assert(moves.last_direction.unwrap().into() == right_dir_felt, 'last direction is wrong');
+    #[test]
+    fn test_player_stat_changes() {
+        let mut player = PlayerTrait::new(1, 100, 20, 30);
+        
+        player.increase_attack(20);
+        assert(player.attack_points == 40, 'attack should be 40');
 
-        let new_position: Position = world.read_model(caller);
-        assert(new_position.vec.x == initial_position.vec.x + 1, 'position x is wrong');
-        assert(new_position.vec.y == initial_position.vec.y, 'position y is wrong');
+        player.reduce_damage(20);
+        assert(player.damage_points == 10, 'damage should be 10');
+
+        player.reduce_damage(50);
+        assert(player.damage_points == 0, 'damage should be 0');
     }
 }
