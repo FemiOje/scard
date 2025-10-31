@@ -1480,7 +1480,7 @@
   "contracts": [
     {
       "address": "0x5f1a6e950cd76dd1d3384459fcf39b711dd8169960d932e43444d1501911c2f",
-      "class_hash": "0x266623c4c036e19f5d02abda9c56747ba00763cc7551f3f29ed6b2564694bd7",
+      "class_hash": "0x6105c2915fd921af27f90d5aa801f1a9d9905bd4c0df6962130540078eafa4a",
       "abi": [
         {
           "type": "impl",
@@ -1560,6 +1560,24 @@
           ]
         },
         {
+          "type": "struct",
+          "name": "scard::models::position::Position",
+          "members": [
+            {
+              "name": "game_id",
+              "type": "core::integer::u64"
+            },
+            {
+              "name": "x",
+              "type": "core::integer::u32"
+            },
+            {
+              "name": "y",
+              "type": "core::integer::u32"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "scard::systems::game::contracts::IGameSystems",
           "items": [
@@ -1614,6 +1632,22 @@
               ],
               "outputs": [],
               "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "get_position",
+              "inputs": [
+                {
+                  "name": "game_id",
+                  "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "scard::models::position::Position"
+                }
+              ],
+              "state_mutability": "view"
             }
           ]
         },
@@ -1760,6 +1794,12 @@
     },
     {
       "members": [],
+      "class_hash": "0x1337505d0c506f00a14e3834d61c571d54ab7a202f223a991e3bd0f4a9d13b3",
+      "tag": "scard-GameState",
+      "selector": "0x39969cd8c0d938e0d4ffd680f17538d0350ddccb6972a6a7ba4bef906d79d25"
+    },
+    {
+      "members": [],
       "class_hash": "0x2d5549b407e67badfed4ee48758d19f43f3b6fb6523b8104e18dec35de777cb",
       "tag": "scard-Player",
       "selector": "0x259039b0ec9b4d663baa64431f0f08a3f93bfb88335224502d8eeab6ce02b94"
@@ -1783,6 +1823,12 @@
       "class_hash": "0x75e09eb11dca8b6d32d04d31955dcd6c7a749aacd69fbb042546b29e2f356c4",
       "tag": "scard-GameCreated",
       "selector": "0xd9acd4d7b54dfe4550947abc4f8b51d3ab99a4819e6f0d0c4018c6b000c665"
+    },
+    {
+      "members": [],
+      "class_hash": "0x6ae0cc3f422af58b7f0ca4c52b686863c2eda07739b4935f375415b5731aa48",
+      "tag": "scard-GameWon",
+      "selector": "0x2a4d1ec320f979863ed2bbd44836fffbd13d4507f7069f9567e81a22027f9f9"
     },
     {
       "members": [],

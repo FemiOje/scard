@@ -7,9 +7,12 @@ import { setupWorld } from "../typescript/contracts.gen";
 import { dojoConfig } from "../../dojoConfig";
 import { getContractByName } from "@dojoengine/core";
 
+export type GameStatus = "InProgress" | "Won" | "Lost";
+
 interface UseGameStateReturn {
   gameId: string | null;
   playerPosition: Position | null;
+  gameStatus: GameStatus;
   isLoading: boolean;
   error: string | null;
   createGame: () => Promise<void>;
@@ -26,8 +29,14 @@ export function useGameState(): UseGameStateReturn {
   const { provider } = dojoSDK as any;
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerPosition, setPlayerPosition] = useState<Position | null>(null);
+  const [gameStatus, setGameStatus] = useState<GameStatus>("InProgress");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Grid size constant - win condition is at bottom-right corner
+  const GRID_SIZE = 5;
+  const WIN_X = GRID_SIZE - 1; // 4
+  const WIN_Y = GRID_SIZE - 1; // 4
 
   const getGameId = useCallback((addr: string): string => {
     if (!addr) return "0";
@@ -60,8 +69,20 @@ export function useGameState(): UseGameStateReturn {
     } else {
       setGameId(null);
       setPlayerPosition(null);
+      setGameStatus("InProgress");
     }
   }, [address, getGameId]);
+
+  /**
+   * Check if position indicates win condition
+   * Invariant: gameStatus === "Won" IFF position === (4, 4)
+   */
+  const checkWinCondition = useCallback(
+    (position: { x: number; y: number }): boolean => {
+      return position.x === WIN_X && position.y === WIN_Y;
+    },
+    []
+  );
 
   /**
    * Wait for transaction confirmation with retries
@@ -176,21 +197,20 @@ export function useGameState(): UseGameStateReturn {
         worldAddress
       );
 
-      if (position) {
-        setPlayerPosition({
-          game_id: gameId,
-          x: position.x,
-          y: position.y,
-        } as unknown as Position);
-      } else {
+      const finalPosition = position || { x: 0, y: 0 };
+      if (!position) {
         // Fallback: assume initial position is (0, 0)
         console.warn("[Create Game] Could not parse position, using (0,0)");
-        setPlayerPosition({
-          game_id: gameId,
-          x: 0,
-          y: 0,
-        } as unknown as Position);
       }
+
+      setPlayerPosition({
+        game_id: gameId,
+        x: finalPosition.x,
+        y: finalPosition.y,
+      } as unknown as Position);
+
+      // Reset game status to InProgress when creating new game
+      setGameStatus("InProgress");
     } catch (err) {
       console.error("Error creating game:", err);
       setError(err instanceof Error ? err.message : "Failed to create game");
@@ -202,6 +222,13 @@ export function useGameState(): UseGameStateReturn {
   // Move player
   const movePlayer = useCallback(
     async (direction: "Left" | "Right" | "Up" | "Down") => {
+      // Edge case: Prevent movement if game is already won
+      if (gameStatus === "Won") {
+        console.warn("[Move] Cannot move - game is already won");
+        setError("Game is already won. Please start a new game.");
+        return;
+      }
+
       if (
         !account ||
         !gameActions ||
@@ -240,13 +267,34 @@ export function useGameState(): UseGameStateReturn {
         );
 
         if (position) {
+          // Check win condition when position is updated
+          // Invariant: Ensure gameStatus matches position state
+          const isWin = checkWinCondition(position);
+
           setPlayerPosition({
             game_id: gameId,
             x: position.x,
             y: position.y,
           } as unknown as Position);
+
+          if (isWin) {
+            setGameStatus("Won");
+            console.log("[Move] 🎉 Game won! Position reached (4, 4)");
+          }
         } else {
           console.warn("[Move] Could not parse position from receipt");
+          // Fallback: check current position state if available
+          if (playerPosition) {
+            const currentPos = {
+              x: Number(playerPosition.x),
+              y: Number(playerPosition.y),
+            };
+            const isWin = checkWinCondition(currentPos);
+            if (isWin) {
+              setGameStatus("Won");
+              console.log("[Move] 🎉 Game won! (detected via position state)");
+            }
+          }
         }
       } catch (err) {
         console.error("Error moving player:", err);
@@ -255,12 +303,38 @@ export function useGameState(): UseGameStateReturn {
         setIsLoading(false);
       }
     },
-    [account, gameActions, gameId, gameSystemsAddress, worldAddress]
+    [
+      account,
+      gameActions,
+      gameId,
+      gameSystemsAddress,
+      worldAddress,
+      gameStatus,
+      playerPosition,
+      checkWinCondition,
+    ]
   );
+
+  // Sync check: Validate that gameStatus matches position state
+  useEffect(() => {
+    if (playerPosition && gameStatus === "InProgress") {
+      const pos = {
+        x: Number(playerPosition.x),
+        y: Number(playerPosition.y),
+      };
+      if (checkWinCondition(pos)) {
+        console.warn(
+          "[State Sync] Position indicates win but status is InProgress. Updating..."
+        );
+        setGameStatus("Won");
+      }
+    }
+  }, [playerPosition, gameStatus, checkWinCondition]);
 
   return {
     gameId,
     playerPosition,
+    gameStatus,
     isLoading,
     error,
     createGame,

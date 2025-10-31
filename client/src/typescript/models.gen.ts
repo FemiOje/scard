@@ -16,6 +16,12 @@ export interface CurrentEncounter {
 	encounter_type: BigNumberish;
 }
 
+// Type definition for `scard::models::game_state::GameState` struct
+export interface GameState {
+	game_id: BigNumberish;
+	status: BigNumberish;
+}
+
 // Type definition for `scard::models::player::Player` struct
 export interface Player {
 	game_id: BigNumberish;
@@ -47,6 +53,13 @@ export interface GameCreated {
 	start_y: BigNumberish;
 }
 
+// Type definition for `scard::systems::game::contracts::game_systems::GameWon` struct
+export interface GameWon {
+	game_id: BigNumberish;
+	final_x: BigNumberish;
+	final_y: BigNumberish;
+}
+
 // Type definition for `scard::systems::game::contracts::game_systems::Moved` struct
 export interface Moved {
 	game_id: BigNumberish;
@@ -69,10 +82,12 @@ export interface SchemaType extends ISchemaType {
 	scard: {
 		BeastEncounter: BeastEncounter,
 		CurrentEncounter: CurrentEncounter,
+		GameState: GameState,
 		Player: Player,
 		Position: Position,
 		EncounterGenerated: EncounterGenerated,
 		GameCreated: GameCreated,
+		GameWon: GameWon,
 		Moved: Moved,
 	},
 }
@@ -87,6 +102,10 @@ export const schema: SchemaType = {
 		CurrentEncounter: {
 			game_id: 0,
 			encounter_type: 0,
+		},
+		GameState: {
+			game_id: 0,
+			status: 0,
 		},
 		Player: {
 			game_id: 0,
@@ -111,6 +130,11 @@ export const schema: SchemaType = {
 			start_x: 0,
 			start_y: 0,
 		},
+		GameWon: {
+			game_id: 0,
+			final_x: 0,
+			final_y: 0,
+		},
 		Moved: {
 			game_id: 0,
 		direction: new CairoCustomEnum({ 
@@ -126,10 +150,12 @@ export const schema: SchemaType = {
 export enum ModelsMapping {
 	BeastEncounter = 'scard-BeastEncounter',
 	CurrentEncounter = 'scard-CurrentEncounter',
+	GameState = 'scard-GameState',
 	Player = 'scard-Player',
 	Position = 'scard-Position',
 	Direction = 'scard-Direction',
 	EncounterGenerated = 'scard-EncounterGenerated',
 	GameCreated = 'scard-GameCreated',
+	GameWon = 'scard-GameWon',
 	Moved = 'scard-Moved',
 }

@@ -386,6 +386,23 @@
     0 0 35px rgba(144, 238, 238, 0.4);
 }
 
+/* Disabled cell (when game is won or loading) */
+.halloween-cell.disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.halloween-cell.disabled.valid-move {
+  border-color: rgba(0, 255, 0, 0.3);
+  opacity: 0.5;
+}
+
+.halloween-cell.disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 @keyframes cellPulse {
   0%,
   100% {
@@ -410,6 +427,39 @@
   animation: fadeIn 0.3s ease-in;
   text-align: center;
   letter-spacing: 1px;
+}
+
+.cell-message.win-message {
+  color: #ffd700;
+  text-shadow:
+    0 0 10px rgba(255, 215, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.6);
+  font-weight: 600;
+  font-size: 1.6rem;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.win-indicator {
+  color: #ffd700;
+  text-shadow:
+    0 0 10px rgba(255, 215, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.6);
+  font-weight: 700;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  0% {
+    text-shadow:
+      0 0 10px rgba(255, 215, 0, 0.8),
+      0 0 20px rgba(255, 215, 0, 0.6);
+  }
+  100% {
+    text-shadow:
+      0 0 20px rgba(255, 215, 0, 1),
+      0 0 30px rgba(255, 215, 0, 0.8),
+      0 0 40px rgba(255, 215, 0, 0.6);
+  }
 }
 
 @keyframes fadeIn {

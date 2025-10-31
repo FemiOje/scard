@@ -14,7 +14,8 @@ mod game_systems {
     use dojo::model::ModelStorage;
     use dojo::event::EventStorage;
     use scard::models::{
-        PlayerTrait, Position, PositionTrait, Direction, Encounter, CurrentEncounterTrait
+        PlayerTrait, Position, PositionTrait, Direction, Encounter, CurrentEncounterTrait,
+        GameStateTrait
     };
     use scard::constants::{
         DEFAULT_PLAYER_HEALTH, DEFAULT_PLAYER_ATTACK, DEFAULT_PLAYER_DAMAGE, DEFAULT_NS
@@ -52,6 +53,15 @@ mod game_systems {
         pub encounter_type: u8,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct GameWon {
+        #[key]
+        pub game_id: u64,
+        pub final_x: u32,
+        pub final_y: u32,
+    }
+
     // ------------------------------------------ //
     // ------------ External Functions ---------- //
     // ------------------------------------------ //
@@ -75,6 +85,10 @@ mod game_systems {
             let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
             world.write_model(@encounter);
 
+            // Initialize game state as InProgress
+            let game_state = GameStateTrait::new(game_id);
+            world.write_model(@game_state);
+
             // Emit game created event
             world
                 .emit_event(
@@ -87,6 +101,10 @@ mod game_systems {
         fn move(ref self: ContractState, game_id: u64, direction: Direction) {
             let mut world = self.world(@DEFAULT_NS());
 
+            // Check if game is already won or lost - don't allow movement
+            let mut game_state: scard::models::GameState = world.read_model(game_id);
+            assert(game_state.is_in_progress(), 'game is not in progress');
+
             // Read current position
             let mut position: Position = world.read_model(game_id);
 
@@ -97,9 +115,14 @@ mod game_systems {
             // Write updated position
             world.write_model(@position);
 
-            // Generate new encounter (for now, FreeRoam - later add randomization)
-            let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
-            world.write_model(@encounter);
+            // Check win condition: bottom-right cell is (4, 4) for a 5x5 grid
+            if position.x == 4 && position.y == 4 {
+                game_state.set_won();
+                world.write_model(@game_state);
+                
+                // Emit game won event
+                world.emit_event(@GameWon { game_id, final_x: position.x, final_y: position.y });
+            }
 
             // Emit moved event
             world
@@ -107,8 +130,15 @@ mod game_systems {
                     @Moved { game_id, direction, new_x: position.x, new_y: position.y, }
                 );
 
-            // Emit encounter generated event
-            world.emit_event(@EncounterGenerated { game_id, encounter_type: 8 }); // 8 = FreeRoam
+            // Only generate encounter if game is still in progress (not won/lost)
+            if game_state.is_in_progress() {
+                // Generate new encounter (for now, FreeRoam - later add randomization)
+                let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
+                world.write_model(@encounter);
+
+                // Emit encounter generated event
+                world.emit_event(@EncounterGenerated { game_id, encounter_type: 8 }); // 8 = FreeRoam
+            }
         }
 
         fn fight(ref self: ContractState, game_id: u64) {
@@ -165,9 +195,11 @@ mod game_systems {
                     TestResource::Model("Player"),
                     TestResource::Model("Position"),
                     TestResource::Model("CurrentEncounter"),
+                    TestResource::Model("GameState"),
                     TestResource::Event("GameCreated"),
                     TestResource::Event("Moved"),
                     TestResource::Event("EncounterGenerated"),
+                    TestResource::Event("GameWon"),
                     TestResource::Contract("game_systems"),
                 ].span()
             };

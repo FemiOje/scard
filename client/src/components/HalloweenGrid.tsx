@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import "./HalloweenGrid.css";
 import { MoveConfirmationPopup } from "./MoveConfirmationPopup";
 import type { Position } from "../typescript/models.gen";
+import type { GameStatus } from "../hooks/useGameState";
 
 interface GridCellProps {
   index: number;
@@ -11,6 +12,7 @@ interface GridCellProps {
   isPlayerPosition: boolean;
   isValidMove: boolean;
   isSelected: boolean;
+  isDisabled: boolean;
   onClick: () => void;
   onHover: (index: number | null) => void;
 }
@@ -23,6 +25,7 @@ const GridCell: React.FC<GridCellProps> = ({
   isPlayerPosition,
   isValidMove,
   isSelected,
+  isDisabled,
   onClick,
   onHover,
 }) => {
@@ -30,10 +33,19 @@ const GridCell: React.FC<GridCellProps> = ({
     <div
       className={`halloween-cell ${isHovered ? "hovered" : ""} ${
         isPlayerPosition ? "player-position" : ""
-      } ${isValidMove ? "valid-move" : ""} ${isSelected ? "selected" : ""}`}
-      onMouseEnter={() => onHover(index)}
-      onMouseLeave={() => onHover(null)}
-      onClick={isValidMove ? onClick : undefined}
+      } ${isValidMove ? "valid-move" : ""} ${isSelected ? "selected" : ""} ${
+        isDisabled ? "disabled" : ""
+      }`}
+      onMouseEnter={() => !isDisabled && onHover(index)}
+      onMouseLeave={() => !isDisabled && onHover(null)}
+      onClick={isValidMove && !isDisabled ? onClick : undefined}
+      style={{
+        cursor: isDisabled
+          ? "not-allowed"
+          : isValidMove
+            ? "pointer"
+            : "default",
+      }}
     >
       <div className="cell-inner">
         {isPlayerPosition ? (
@@ -133,15 +145,18 @@ const GhostSVG: React.FC<{ className?: string }> = ({ className = "" }) => (
 
 interface HalloweenGridProps {
   playerPosition: Position | null;
+  gameStatus: GameStatus;
   onMove: (direction: "Left" | "Right" | "Up" | "Down") => Promise<void>;
   isLoading?: boolean;
 }
 
 export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
   playerPosition,
+  gameStatus,
   onMove,
   isLoading = false,
 }) => {
+  const isGameWon = gameStatus === "Won";
   const [hoveredCell, setHoveredCell] = useState<number | null>(null);
   const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [showMovePopup, setShowMovePopup] = useState(false);
@@ -172,8 +187,9 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
   }, [playerPosition]);
 
   // Calculate valid moves (adjacent cells)
+  // Edge case: No valid moves when game is won
   const validMoves = useMemo(() => {
-    if (!playerGridPos) return new Set<number>();
+    if (isGameWon || !playerGridPos) return new Set<number>();
     const valid = new Set<number>();
     const { x, y } = playerGridPos;
 
@@ -184,7 +200,7 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
     if (y < gridSize - 1) valid.add(coordsToIndex(x, y + 1)); // Down
 
     return valid;
-  }, [playerGridPos]);
+  }, [playerGridPos, isGameWon]);
 
   // Calculate direction from player position to target cell
   const getDirection = (
@@ -204,7 +220,10 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
   };
 
   const handleCellClick = (index: number) => {
-    if (!validMoves.has(index) || !playerGridPos) return;
+    // Edge case: Disable clicks when game is won or loading
+    if (isGameWon || isLoading || !validMoves.has(index) || !playerGridPos) {
+      return;
+    }
     setSelectedCell(index);
     setShowMovePopup(true);
   };
@@ -245,9 +264,15 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
       <div className="grid-title">
         <h1 className="spooky-title">🎃 SCAR'D 🎃</h1>
         <p className="spooky-subtitle">
-          {playerGridPos
-            ? `Position: (${playerGridPos.x}, ${playerGridPos.y})`
-            : "Hover over the cells if you dare..."}
+          {isGameWon ? (
+            <span className="win-indicator">
+              🎉 You Won! Navigate to (4, 4) completed! 🎉
+            </span>
+          ) : playerGridPos ? (
+            `Position: (${playerGridPos.x}, ${playerGridPos.y})`
+          ) : (
+            "Hover over the cells if you dare..."
+          )}
         </p>
       </div>
 
@@ -268,6 +293,7 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
               isPlayerPosition={isPlayerPos}
               isValidMove={isValidMove}
               isSelected={selectedCell === index}
+              isDisabled={isGameWon || isLoading}
               onClick={() => handleCellClick(index)}
               onHover={setHoveredCell}
             />
@@ -277,17 +303,21 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
 
       {/* Spooky message */}
       <div className="spooky-message">
-        {hoveredCell !== null && !playerGridPos && (
+        {isGameWon ? (
+          <p className="cell-message win-message">
+            Game completed! Click "Play Again" to start a new game! 🎉
+          </p>
+        ) : hoveredCell !== null && !playerGridPos ? (
           <p className="cell-message">
             You've awakened cell {hoveredCell + 1}! 👻
           </p>
-        )}
-        {playerGridPos && validMoves.size > 0 && (
+        ) : playerGridPos && validMoves.size > 0 ? (
           <p className="cell-message">
             Click on a highlighted cell to move! 👻
           </p>
-        )}
-        {isLoading && <p className="cell-message">Moving... 🎃</p>}
+        ) : isLoading ? (
+          <p className="cell-message">Moving... 🎃</p>
+        ) : null}
       </div>
 
       {/* Move Confirmation Popup */}

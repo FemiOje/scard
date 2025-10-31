@@ -67,6 +67,23 @@ export function setupWorld(provider: DojoProvider) {
 		}
 	};
 
+	const build_game_systems_getPosition_calldata = (gameId: BigNumberish): DojoCall => {
+		return {
+			contractName: "game_systems",
+			entrypoint: "get_position",
+			calldata: [gameId],
+		};
+	};
+
+	const game_systems_getPosition = async (gameId: BigNumberish) => {
+		try {
+			return await provider.call("scard", build_game_systems_getPosition_calldata(gameId));
+		} catch (error) {
+			console.error(error);
+			throw error;
+		}
+	};
+
 	const build_game_systems_move_calldata = (gameId: BigNumberish, direction: CairoCustomEnum): DojoCall => {
 		return {
 			contractName: "game_systems",
@@ -98,6 +115,8 @@ export function setupWorld(provider: DojoProvider) {
 			buildFightCalldata: build_game_systems_fight_calldata,
 			flee: game_systems_flee,
 			buildFleeCalldata: build_game_systems_flee_calldata,
+			getPosition: game_systems_getPosition,
+			buildGetPositionCalldata: build_game_systems_getPosition_calldata,
 			move: game_systems_move,
 			buildMoveCalldata: build_game_systems_move_calldata,
 		},

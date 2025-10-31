@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import ControllerConnector from "@cartridge/connector/controller";
 import { HalloweenGrid } from "./components/HalloweenGrid";
 import { SplashScreen } from "./components/SplashScreen";
+import { WinScreen } from "./components/WinScreen";
 import { useGameState } from "./hooks/useGameState";
 import "./App.css";
 
@@ -16,6 +17,7 @@ function App() {
   // Game state management
   const {
     playerPosition,
+    gameStatus,
     isLoading: isGameLoading,
     error: gameError,
     createGame,
@@ -162,10 +164,19 @@ function App() {
         )}
       </header>
 
-      {/* Show Splash Screen or Game */}
-      {showGame ? (
+      {/* Show Splash Screen, Game, or Win Screen */}
+      {gameStatus === "Won" && showGame ? (
+        <WinScreen
+          onPlayAgain={() => {
+            setShowGame(true); // Keep game view open, createGame will reset status
+          }}
+          onCreateGame={createGame}
+          isCreatingGame={isGameLoading}
+        />
+      ) : showGame ? (
         <HalloweenGrid
           playerPosition={playerPosition}
+          gameStatus={gameStatus}
           onMove={movePlayer}
           isLoading={isGameLoading}
         />
