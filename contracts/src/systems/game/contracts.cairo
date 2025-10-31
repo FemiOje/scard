@@ -1,4 +1,4 @@
-use scard::models::Direction;
+use scard::models::{Direction, Position};
 
 #[starknet::interface]
 pub trait IGameSystems<T> {
@@ -6,6 +6,7 @@ pub trait IGameSystems<T> {
     fn move(ref self: T, game_id: u64, direction: Direction);
     fn fight(ref self: T, game_id: u64);
     fn flee(ref self: T, game_id: u64);
+    fn get_position(self: @T, game_id: u64) -> Position;
 }
 
 #[dojo::contract]
@@ -129,6 +130,11 @@ mod game_systems {
             // - Calculate flee success/failure
             // - Update player state
             // - Emit flee event
+        }
+
+        fn get_position(self: @ContractState, game_id: u64) -> Position {
+            let world = self.world(@DEFAULT_NS());
+            world.read_model(game_id)
         }
     }
 
@@ -295,6 +301,68 @@ mod game_systems {
             game_systems.move(game_id, Direction::Up);
             let pos: Position = world.read_model(game_id);
             assert(pos.y == 0, 'should not go below 0');
+        }
+
+        #[test]
+        #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 15000000)]
+        fn test_get_position_after_create() {
+            let game_id: u64 = 4;
+            let ndef = namespace_def();
+            let mut world = spawn_test_world([ndef].span());
+            world.sync_perms_and_inits(contract_defs());
+
+            let (contract_address, _) = world.dns(@"game_systems").unwrap();
+            let mut game_systems = IGameSystemsDispatcher { contract_address };
+
+            // Create game
+            game_systems.create_game(game_id);
+
+            // Get position using the view function
+            let position = game_systems.get_position(game_id);
+            
+            // Verify position is at origin
+            assert(position.game_id == game_id, 'wrong game_id');
+            assert(position.x == 0, 'x should be 0');
+            assert(position.y == 0, 'y should be 0');
+        }
+
+        #[test]
+        #[available_gas(l1_gas: 0, l1_data_gas: 10000, l2_gas: 25000000)]
+        fn test_get_position_after_move() {
+            let game_id: u64 = 5;
+            let ndef = namespace_def();
+            let mut world = spawn_test_world([ndef].span());
+            world.sync_perms_and_inits(contract_defs());
+
+            let (contract_address, _) = world.dns(@"game_systems").unwrap();
+            let mut game_systems = IGameSystemsDispatcher { contract_address };
+
+            // Create game
+            game_systems.create_game(game_id);
+
+            // Verify initial position
+            let position = game_systems.get_position(game_id);
+            assert(position.x == 0 && position.y == 0, 'wrong initial position');
+
+            // Move right
+            game_systems.move(game_id, Direction::Right);
+            let position = game_systems.get_position(game_id);
+            assert(position.x == 1 && position.y == 0, 'wrong position after right');
+
+            // Move down
+            game_systems.move(game_id, Direction::Down);
+            let position = game_systems.get_position(game_id);
+            assert(position.x == 1 && position.y == 1, 'wrong position after down');
+
+            // Move left
+            game_systems.move(game_id, Direction::Left);
+            let position = game_systems.get_position(game_id);
+            assert(position.x == 0 && position.y == 1, 'wrong position after left');
+
+            // Move up
+            game_systems.move(game_id, Direction::Up);
+            let position = game_systems.get_position(game_id);
+            assert(position.x == 0 && position.y == 0, 'wrong position after up');
         }
     }
 }
