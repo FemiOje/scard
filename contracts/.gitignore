@@ -2,3 +2,4 @@ target
 deployments
 dojo_mainnet.toml
 .env.sepolia
+.snfoundry_cache
