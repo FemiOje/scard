@@ -1,0 +1,4 @@
+target
+deployments
+dojo_mainnet.toml
+.env.sepolia
