@@ -8,7 +8,7 @@ interface GridCellProps {
   index: number;
   x: number;
   y: number;
-  isHovered: boolean;
+  // isHovered: boolean; // Not used directly in component, handled by className
   isPlayerPosition: boolean;
   isValidMove: boolean;
   isSelected: boolean;
@@ -19,9 +19,8 @@ interface GridCellProps {
 
 const GridCell: React.FC<GridCellProps> = ({
   index,
-  x,
-  y,
-  isHovered,
+  // x, y - kept for future use (e.g., tooltips showing coordinates)
+  // isHovered,
   isPlayerPosition,
   isValidMove,
   isSelected,
@@ -31,7 +30,7 @@ const GridCell: React.FC<GridCellProps> = ({
 }) => {
   return (
     <div
-      className={`halloween-cell ${isHovered ? "hovered" : ""} ${
+      className={`halloween-cell ${
         isPlayerPosition ? "player-position" : ""
       } ${isValidMove ? "valid-move" : ""} ${isSelected ? "selected" : ""} ${
         isDisabled ? "disabled" : ""
@@ -289,7 +288,6 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
               index={index}
               x={coords.x}
               y={coords.y}
-              isHovered={hoveredCell === index}
               isPlayerPosition={isPlayerPos}
               isValidMove={isValidMove}
               isSelected={selectedCell === index}
