@@ -79,7 +79,7 @@ mod tests {
     fn test_player_is_alive() {
         let player = PlayerTrait::new(1, 100, 20, 10);
         assert(player.is_alive(), 'player should be alive');
-        
+
         let mut dead_player = PlayerTrait::new(2, 0, 20, 10);
         assert(!dead_player.is_alive(), 'player should be dead');
     }
@@ -89,7 +89,7 @@ mod tests {
         let mut player = PlayerTrait::new(1, 100, 20, 10);
         player.apply_damage(30);
         assert(player.health == 70, 'wrong health after damage');
-        
+
         player.apply_damage(80);
         assert(player.health == 0, 'health should be 0');
     }
@@ -106,7 +106,7 @@ mod tests {
         let mut player = PlayerTrait::new(1, 100, 20, 10);
         player.grant_free_flee();
         assert(player.has_free_flee, 'should have free flee');
-        
+
         player.grant_free_attack();
         assert(player.has_free_attack, 'should have free attack');
     }
@@ -123,7 +123,7 @@ mod tests {
         let mut player = PlayerTrait::new(1, 100, 20, 30);
         player.reduce_damage(20);
         assert(player.damage_points == 10, 'wrong damage after reduction');
-        
+
         player.reduce_damage(50);
         assert(player.damage_points == 0, 'damage should be 0');
     }

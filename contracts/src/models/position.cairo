@@ -59,11 +59,7 @@ pub impl Vec2Impl of Vec2Trait {
 #[generate_trait]
 pub impl PositionImpl of PositionTrait {
     fn new(game_id: u64, x: u32, y: u32) -> Position {
-        Position {
-            game_id,
-            x,
-            y,
-        }
+        Position { game_id, x, y }
     }
 
     fn as_vec2(self: Position) -> Vec2 {
@@ -72,29 +68,21 @@ pub impl PositionImpl of PositionTrait {
 
     fn move_in_direction(ref self: Position, direction: Direction) {
         match direction {
-            Direction::Left => {
-                if self.x > 0 {
-                    self.x -= 1;
-                }
-            },
-            Direction::Right => {
-                self.x += 1;
-            },
-            Direction::Up => {
-                if self.y > 0 {
-                    self.y -= 1;
-                }
-            },
-            Direction::Down => {
-                self.y += 1;
-            },
+            Direction::Left => { if self.x > 0 {
+                self.x -= 1;
+            } },
+            Direction::Right => { self.x += 1; },
+            Direction::Up => { if self.y > 0 {
+                self.y -= 1;
+            } },
+            Direction::Down => { self.y += 1; },
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{PositionTrait, Vec2, Vec2Trait, Direction};
+    use super::{Direction, PositionTrait, Vec2, Vec2Trait};
 
     #[test]
     fn test_vec_is_zero() {

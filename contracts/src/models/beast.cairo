@@ -16,13 +16,10 @@ pub struct BeastEncounter {
 
 #[generate_trait]
 pub impl BeastEncounterImpl of BeastEncounterTrait {
-    fn new(game_id: u64, beast_type: Beast, attack_points: u32, damage_points: u32) -> BeastEncounter {
-        BeastEncounter {
-            game_id,
-            beast_type: beast_type.into(),
-            attack_points,
-            damage_points,
-        }
+    fn new(
+        game_id: u64, beast_type: Beast, attack_points: u32, damage_points: u32,
+    ) -> BeastEncounter {
+        BeastEncounter { game_id, beast_type: beast_type.into(), attack_points, damage_points }
     }
 
     fn get_beast_type(self: BeastEncounter) -> Beast {

@@ -10,9 +10,13 @@ pub mod systems {
     }
 }
 
-pub mod models;
-
 pub mod constants;
+
+pub mod libs {
+    pub mod encounter;
+}
+
+pub mod models;
 
 pub mod tests {
     mod test_world;

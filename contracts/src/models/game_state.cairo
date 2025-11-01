@@ -10,16 +10,13 @@ pub enum GameStatus {
 pub struct GameState {
     #[key]
     pub game_id: u64,
-    pub status: u8, // Stored as u8, converted to/from GameStatus enum
+    pub status: u8 // Stored as u8, converted to/from GameStatus enum
 }
 
 #[generate_trait]
 pub impl GameStateImpl of GameStateTrait {
     fn new(game_id: u64) -> GameState {
-        GameState {
-            game_id,
-            status: GameStatus::InProgress.into(),
-        }
+        GameState { game_id, status: GameStatus::InProgress.into() }
     }
 
     fn get_status(self: GameState) -> GameStatus {

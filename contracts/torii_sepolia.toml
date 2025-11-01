@@ -1,0 +1,19 @@
+world_address = "0x066e4d35596f894f2fff6884bf28bd4509a391eb31060176eedb9e5283cd8142"
+rpc = "https://api.cartridge.gg/x/starknet/sepolia"
+
+# [events]
+# raw = true
+
+[events]
+historical = [ 
+  "scard-GameCreated", 
+  "scard-Moved", 
+  "scard-EncounterGenerated", 
+  "scard-GameWon",
+]
+
+[indexing]
+pending = true
+contracts = [
+  # "erc721:0x06a1102ed881e0d6d689295db5819dd1d15f0d55cbe10e1b87587c2ea1ec8da4", # denshokan
+]

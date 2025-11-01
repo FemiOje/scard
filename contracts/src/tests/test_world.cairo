@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     // Basic tests for model functionality without world integration
-    use scard::models::{PositionTrait, Direction, PlayerTrait};
+    use scard::models::{Direction, PlayerTrait, PositionTrait};
 
     #[test]
     fn test_position_creation() {
@@ -14,7 +14,7 @@ mod tests {
     #[test]
     fn test_position_movement() {
         let mut position = PositionTrait::new(1, 10, 10);
-        
+
         position.move_in_direction(Direction::Right);
         assert(position.x == 11, 'move right failed');
         assert(position.y == 10, 'y should not change');
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn test_position_boundary() {
         let mut position = PositionTrait::new(1, 0, 0);
-        
+
         position.move_in_direction(Direction::Left);
         assert(position.x == 0, 'should not go negative x');
 
@@ -77,7 +77,7 @@ mod tests {
         let mut player = PlayerTrait::new(1, 100, 20, 10);
         player.grant_free_flee();
         assert(player.has_free_flee, 'should have free flee');
-        
+
         player.grant_free_attack();
         assert(player.has_free_attack, 'should have free attack');
     }
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     fn test_player_stat_changes() {
         let mut player = PlayerTrait::new(1, 100, 20, 30);
-        
+
         player.increase_attack(20);
         assert(player.attack_points == 40, 'attack should be 40');
 

@@ -15,16 +15,13 @@ pub enum Encounter {
 pub struct CurrentEncounter {
     #[key]
     pub game_id: u64,
-    pub encounter_type: u8, // Stored as u8, converted to/from Encounter enum
+    pub encounter_type: u8 // Stored as u8, converted to/from Encounter enum
 }
 
 #[generate_trait]
 pub impl CurrentEncounterImpl of CurrentEncounterTrait {
     fn new(game_id: u64, encounter: Encounter) -> CurrentEncounter {
-        CurrentEncounter {
-            game_id,
-            encounter_type: encounter.into(),
-        }
+        CurrentEncounter { game_id, encounter_type: encounter.into() }
     }
 
     fn get_encounter(self: CurrentEncounter) -> Encounter {
@@ -42,7 +39,7 @@ pub impl CurrentEncounterImpl of CurrentEncounterTrait {
     fn is_gift_encounter(self: CurrentEncounter) -> bool {
         let encounter: Encounter = self.encounter_type.into();
         match encounter {
-            Encounter::FreeHealth | Encounter::AttackPoints | Encounter::ReducedDamage | 
+            Encounter::FreeHealth | Encounter::AttackPoints | Encounter::ReducedDamage |
             Encounter::FreeAttack | Encounter::FreeFlee => true,
             _ => false,
         }
@@ -104,7 +101,7 @@ impl U8IntoEncounter of Into<u8, Encounter> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Encounter, CurrentEncounterTrait};
+    use super::{CurrentEncounterTrait, Encounter};
 
     #[test]
     fn test_encounter_werewolf() {
