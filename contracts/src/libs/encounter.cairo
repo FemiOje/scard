@@ -81,6 +81,10 @@ pub fn generate_beast_stats(hash: felt252, beast_type: Beast) -> (u32, u32) {
     // Use different hash derivations for attack and damage to avoid correlation
 
     match beast_type {
+        Beast::None => {
+            // No beast - return zero stats
+            (0, 0)
+        },
         Beast::Werewolf => {
             // Werewolf: attack 20-30 (range 11), damage 10-20 (range 11)
             let attack_range: u32 = WEREWOLF_MAX_ATTACK - WEREWOLF_MIN_ATTACK + 1; // 11
@@ -165,4 +169,39 @@ pub fn apply_encounter_effects(ref player: Player, encounter_type: Encounter) {
         },
     }
 }
+/// Calculate flee success probability deterministically
+/// Returns true if flee succeeds, false otherwise
+/// Uses hash of [game_id, player_attack, beast_attack] for deterministic result
+// pub fn calculate_flee_success(game_id: u64, player_attack: u32, beast_attack: u32) -> bool {
+//     // Convert inputs to felt252
+//     let game_id_felt: felt252 = game_id.into();
+//     let player_attack_felt: felt252 = player_attack.into();
+//     let beast_attack_felt: felt252 = beast_attack.into();
+
+//     // Create array with hash inputs
+//     let mut hash_span = ArrayTrait::new();
+//     hash_span.append(game_id_felt);
+//     hash_span.append(player_attack_felt);
+//     hash_span.append(beast_attack_felt);
+
+//     // Generate Poseidon hash
+//     let hash: felt252 = poseidon_hash_span(hash_span.span()).into();
+
+//     // Convert hash to u256 for modulo operation
+//     let hash_u256: u256 = hash.into();
+//     let hash_mod_u256: u256 = hash_u256 % 100_u256;
+//     let hash_mod_u8: u8 = hash_mod_u256.low.try_into().unwrap(); // Safe: 0-99 < 256
+//     let roll: u8 = hash_mod_u8;
+
+//     // Determine flee success rate based on player attack vs beast attack
+//     let success_rate: u8 = if player_attack >= beast_attack {
+//         FLEE_SUCCESS_RATE_STRONGER // 70% when player is stronger
+//     } else {
+//         FLEE_SUCCESS_RATE_WEAKER // 30% when player is weaker
+//     };
+
+//     // Roll against success rate (0-99, succeed if roll < success_rate)
+//     roll < success_rate
+// }
+
 

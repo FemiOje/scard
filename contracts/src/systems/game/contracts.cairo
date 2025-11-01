@@ -79,6 +79,18 @@ mod game_systems {
         pub player_died: bool,
     }
 
+    #[derive(Copy, Drop, Serde)]
+    #[dojo::event]
+    pub struct FledEvent {
+        #[key]
+        pub game_id: u64,
+        pub beast_type: u8,
+        pub flee_successful: bool,
+        pub player_damage_taken: u32,
+        pub player_health_after: u32,
+        pub player_died: bool,
+    }
+
     // ------------------------------------------ //
     // ------------ External Functions ---------- //
     // ------------------------------------------ //
@@ -143,12 +155,10 @@ mod game_systems {
 
             // Only generate encounter if game is still in progress (not won/lost)
             if game_state.is_in_progress() {
-                // Generate deterministic encounter hash from game state
                 let encounter_hash = generate_encounter_hash(
                     game_id, position.x, position.y, direction,
                 );
 
-                // Select encounter type based on hash
                 let encounter_type = select_encounter_from_hash(encounter_hash);
 
                 // Handle each encounter type explicitly for frontend UX
@@ -176,16 +186,20 @@ mod game_systems {
                     Encounter::FreeHealth | Encounter::AttackPoints | Encounter::ReducedDamage |
                     Encounter::FreeAttack | Encounter::FreeFlee |
                     Encounter::FreeRoam => {
-                        // Apply encounter effects to player (handles all gift encounters)
                         let mut player: Player = world.read_model(game_id);
                         apply_encounter_effects(ref player, encounter_type);
                         world.write_model(@player);
+                        
+                        // Clear BeastEncounter model by overwriting with empty values
+                        // This ensures only beast encounters have valid BeastEncounter models
+                        let empty_beast = BeastEncounterTrait::new(game_id, Beast::None, 0, 0);
+                        world.write_model(@empty_beast);
                     },
                 }
 
                 // Update CurrentEncounter model
-                let encounter = CurrentEncounterTrait::new(game_id, encounter_type);
-                world.write_model(@encounter);
+                let current_encounter = CurrentEncounterTrait::new(game_id, encounter_type);
+                world.write_model(@current_encounter);
 
                 // Emit encounter generated event
                 world
@@ -197,11 +211,6 @@ mod game_systems {
 
         fn fight(ref self: ContractState, game_id: u64) {
             let mut world = self.world(@DEFAULT_NS());
-
-            // ------------------------------------------ //
-            // ---------------- Validation -------------- //
-            // ------------------------------------------ //
-
             // Validate game is in progress
             let mut game_state: scard::models::GameState = world.read_model(game_id);
             assert(game_state.is_in_progress(), 'game is not in progress');
@@ -255,6 +264,11 @@ mod game_systems {
             let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
             world.write_model(@encounter);
 
+            // Clear BeastEncounter model by overwriting with empty values
+            // This prevents stale beast data from persisting
+            let empty_beast = BeastEncounterTrait::new(game_id, Beast::None, 0, 0);
+            world.write_model(@empty_beast);
+
             // Write updated player model
             world.write_model(@player);
 
@@ -278,13 +292,99 @@ mod game_systems {
         }
 
         fn flee(ref self: ContractState, game_id: u64) {
-            let mut _world = self.world(@DEFAULT_NS());
-            // TODO: Implement flee logic
-        // - Validate player is in combat
-        // - Check if player has free flee ability
-        // - Calculate flee success/failure
-        // - Update player state
-        // - Emit flee event
+            let mut world = self.world(@DEFAULT_NS());
+
+            // ------------------------------------------ //
+            // ---------------- Validation -------------- //
+            // ------------------------------------------ //
+
+            // Validate game is in progress
+            let mut game_state: scard::models::GameState = world.read_model(game_id);
+            assert(game_state.is_in_progress(), 'game is not in progress');
+
+            // Validate player is in a beast encounter
+            let current_encounter: scard::models::CurrentEncounter = world.read_model(game_id);
+            assert(current_encounter.is_beast_encounter(), 'not in beast encounter');
+
+            // Read BeastEncounter model (must exist for beast encounters)
+            let beast_encounter: BeastEncounter = world.read_model(game_id);
+
+            // Read Player model
+            let mut player: Player = world.read_model(game_id);
+
+            // ------------------------------------------ //
+            // ---------------- Flee Logic --------------- //
+            // ------------------------------------------ //
+
+            // Simple flee logic: beast always attacks first
+            // If player survives the damage, flee succeeds
+            // If player dies, flee fails and game ends
+
+            let beast_damage: u32 = beast_encounter.damage_points;
+
+            // Check if player has free flee ability (skip damage)
+            let has_free_flee: bool = player.has_free_flee;
+            let player_damage_taken: u32 = if has_free_flee {
+                // Free flee: no damage taken
+                0
+            } else {
+                // Normal flee: beast attacks, apply damage
+                PlayerTrait::apply_damage(ref player, beast_damage);
+                beast_damage
+            };
+
+            // Get player health after damage (if any)
+            let player_health_after: u32 = player.health;
+
+            let player_died: bool = !player.is_alive();
+
+            // Determine flee success: if player survived, flee succeeds
+            let flee_successful: bool = !player_died;
+
+            // Consume free flee ability if used
+            if has_free_flee {
+                player.has_free_flee = false;
+            }
+
+            // ------------------------------------------ //
+            // ---------------- State Updates ----------- //
+            // ------------------------------------------ //
+
+            if player_died {
+                // Player died: set game state to Lost
+                game_state.set_lost();
+                world.write_model(@game_state);
+                // Encounter remains as beast (player died during flee)
+            } else {
+                // Player survived: flee successful, end encounter
+                let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
+                world.write_model(@encounter);
+                
+                // Clear BeastEncounter model by overwriting with empty values
+                // This prevents stale beast data from persisting
+                let empty_beast = BeastEncounterTrait::new(game_id, Beast::None, 0, 0);
+                world.write_model(@empty_beast);
+            }
+
+            // Write updated player model
+            world.write_model(@player);
+
+            // ------------------------------------------ //
+            // ---------------- Events ------------------ //
+            // ------------------------------------------ //
+
+            // Emit flee event with results
+            world
+                .emit_event(
+                    @FledEvent {
+                        game_id,
+                        beast_type: beast_encounter.beast_type,
+                        flee_successful,
+                        player_damage_taken,
+                        player_health_after,
+                        player_died,
+                    },
+                );
         }
 
         fn get_position(self: @ContractState, game_id: u64) -> Position {

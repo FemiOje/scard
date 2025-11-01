@@ -1480,7 +1480,7 @@
   "contracts": [
     {
       "address": "0x5f1a6e950cd76dd1d3384459fcf39b711dd8169960d932e43444d1501911c2f",
-      "class_hash": "0x6105c2915fd921af27f90d5aa801f1a9d9905bd4c0df6962130540078eafa4a",
+      "class_hash": "0x11ef6081b9f7852f6b5bcfa96276f564010a0b832768c7513cfca1d8148fdc6",
       "abi": [
         {
           "type": "impl",
@@ -1814,9 +1814,21 @@
   "events": [
     {
       "members": [],
+      "class_hash": "0x6cf93fd1ef9e6464ceffc18d6e164a4dc32a49d7704f787c55e25cb64c5820c",
+      "tag": "scard-CombatEvent",
+      "selector": "0x37a0c60b7b3c9fb8d6bd45c8dfdc64a4cb037aae66f2e2c94d11aa18c9c677e"
+    },
+    {
+      "members": [],
       "class_hash": "0x35097bd0139751539031dfc75f2d8d466f5f65222cea3f099863f2cdaf878c7",
       "tag": "scard-EncounterGenerated",
       "selector": "0x5cc584127b92b5c877561ded62bc6638e757366eb34b9728634f63e5b29369b"
+    },
+    {
+      "members": [],
+      "class_hash": "0x38b79ead35f13923ac768cab1bd2184adb1e98591b3ea5e8133f5f18c9802a6",
+      "tag": "scard-FledEvent",
+      "selector": "0x18c2678b942bd1a753c7dacf0f776fef5887784609d0d7db24b7128991c4c9e"
     },
     {
       "members": [],

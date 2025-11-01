@@ -42,10 +42,8 @@ get_contract_address () {
   echo $RESULT
 }
 
-export ACTIONS_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-actions")
+export GAME_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_systems")
 # export GAME_TOKEN_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_token_systems")
-# export GAME_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_systems")
 
-echo "ACTIONS SYSTEM ADDRESS: $ACTIONS_SYSTEM_ADDRESS"
+echo "GAME SYSTEMS ADDRESS: $GAME_SYSTEM_ADDRESS"
 # echo "GAME TOKEN SYSTEM ADDRESS: $GAME_TOKEN_SYSTEM_ADDRESS"
-# echo "GAME SYSTEMS ADDRESS: $GAME_SYSTEM_ADDRESS"

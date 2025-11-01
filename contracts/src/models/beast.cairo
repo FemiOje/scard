@@ -1,5 +1,7 @@
 #[derive(Serde, Copy, Drop, PartialEq, Debug)]
 pub enum Beast {
+    #[default]
+    None,    // Default variant - no beast
     Werewolf,
     Vampire,
 }
@@ -33,11 +35,16 @@ pub impl BeastEncounterImpl of BeastEncounterTrait {
     fn is_vampire(self: BeastEncounter) -> bool {
         self.beast_type == 2
     }
+
+    fn is_none(self: BeastEncounter) -> bool {
+        self.beast_type == 0
+    }
 }
 
 impl BeastIntoU8 of Into<Beast, u8> {
     fn into(self: Beast) -> u8 {
         match self {
+            Beast::None => 0,
             Beast::Werewolf => 1,
             Beast::Vampire => 2,
         }
@@ -48,8 +55,10 @@ impl U8IntoBeast of Into<u8, Beast> {
     fn into(self: u8) -> Beast {
         if self == 1 {
             Beast::Werewolf
-        } else {
+        } else if self == 2 {
             Beast::Vampire
+        } else {
+            Beast::None
         }
     }
 }
@@ -82,13 +91,31 @@ mod tests {
 
     #[test]
     fn test_beast_conversions() {
+        let none: u8 = Beast::None.into();
         let werewolf: u8 = Beast::Werewolf.into();
         let vampire: u8 = Beast::Vampire.into();
+        assert(none == 0, 'wrong none value');
         assert(werewolf == 1, 'wrong werewolf value');
         assert(vampire == 2, 'wrong vampire value');
 
-        // Test round-trip conversion
+        // Test round-trip conversions
+        let beast_back: Beast = none.into();
+        assert(beast_back == Beast::None, 'none conversion failed');
         let beast_back: Beast = werewolf.into();
-        assert(beast_back == Beast::Werewolf, 'conversion failed');
+        assert(beast_back == Beast::Werewolf, 'werewolf conversion failed');
+        let beast_back: Beast = vampire.into();
+        assert(beast_back == Beast::Vampire, 'vampire conversion failed');
+    }
+
+    #[test]
+    fn test_beast_encounter_none() {
+        let encounter = BeastEncounterTrait::new(0, Beast::None, 0, 0);
+        assert(encounter.game_id == 0, 'wrong game_id');
+        assert(encounter.is_none(), 'should be none');
+        assert(!encounter.is_werewolf(), 'should not be werewolf');
+        assert(!encounter.is_vampire(), 'should not be vampire');
+        assert(encounter.attack_points == 0, 'wrong attack');
+        assert(encounter.damage_points == 0, 'wrong damage');
+        assert(encounter.get_beast_type() == Beast::None, 'wrong beast type');
     }
 }

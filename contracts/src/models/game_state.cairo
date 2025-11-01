@@ -50,7 +50,6 @@ impl GameStatusIntoU8 of Into<GameStatus, u8> {
             GameStatus::InProgress => 0,
             GameStatus::Won => 1,
             GameStatus::Lost => 2,
-            // If GameStatus enum expands, add new match cases here
         }
     }
 }
@@ -63,13 +62,6 @@ const STATUS_LOST: u8 = 2;
 
 impl U8IntoGameStatus of Into<u8, GameStatus> {
     fn into(self: u8) -> GameStatus {
-        // Explicitly handle each known enum variant using constants
-        // These constants must match the match statement in GameStatusIntoU8 above
-        // Note: If GameStatus enum expands:
-        //   1. Add new variant to enum
-        //   2. Add case to GameStatusIntoU8 match statement
-        //   3. Add constant above
-        //   4. Add explicit check here before fallback
         if self == STATUS_WON {
             GameStatus::Won
         } else if self == STATUS_LOST {
@@ -77,8 +69,6 @@ impl U8IntoGameStatus of Into<u8, GameStatus> {
         } else if self == STATUS_IN_PROGRESS {
             GameStatus::InProgress
         } else {
-            // Fallback for unknown/invalid values - defaults to InProgress
-            // This handles edge cases but should ideally never be reached
             GameStatus::InProgress
         }
     }

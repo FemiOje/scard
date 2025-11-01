@@ -56,6 +56,16 @@ pub const THRESHOLD_BEAST_START: u8 = PROB_FREEROAM + PROB_GIFT_TOTAL; // 75
 const _PROB_SUM_CHECK: u8 = PROB_FREEROAM + PROB_GIFT_TOTAL + PROB_BEAST_TOTAL;
 // Should equal 100 - compiler will catch if not
 
+// ------------------------------------------ //
+// -------- Flee Success Rates ------------- //
+// ------------------------------------------ //
+
+// Flee success rates (percentages)
+// When player attack >= beast attack: higher success rate
+// pub const FLEE_SUCCESS_RATE_STRONGER: u8 = 70; // 70% chance when player is stronger
+// When player attack < beast attack: lower success rate
+// pub const FLEE_SUCCESS_RATE_WEAKER: u8 = 30; // 30% chance when player is weaker
+
 #[cfg(test)]
 mod tests {
     use super::{
