@@ -24,6 +24,16 @@ export const WIN_X = GRID_SIZE - 1; // 4
 export const WIN_Y = GRID_SIZE - 1; // 4
 
 // ============================================================================
+// Player Stats Configuration
+// ============================================================================
+
+/**
+ * Maximum player health (default starting health)
+ * Matches DEFAULT_PLAYER_HEALTH from contract
+ */
+export const MAX_PLAYER_HEALTH = 100;
+
+// ============================================================================
 // Transaction Retry Configuration
 // ============================================================================
 

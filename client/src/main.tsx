@@ -8,7 +8,7 @@ import { DojoSdkProvider } from "@dojoengine/sdk/react";
 import type { SchemaType } from "./generated/typescript/models.gen.ts";
 import { setupWorld } from "./generated/typescript/contracts.gen.ts";
 
-import "./index.css";
+import "./styles/index.css";
 import { dojoConfig } from "../dojoConfig.ts";
 import StarknetProvider from "./contexts/starknet.tsx";
 

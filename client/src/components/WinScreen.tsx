@@ -1,5 +1,5 @@
 import React from "react";
-import "./WinScreen.css";
+import "../styles/components/WinScreen.css";
 
 interface WinScreenProps {
   onPlayAgain: () => void;

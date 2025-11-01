@@ -339,26 +339,77 @@
   filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
 }
 
-/* Valid move indicator */
+/* Valid move indicator - Enhanced */
 .halloween-cell.valid-move {
   cursor: pointer;
-  border-color: #00ff00;
+  border-color: #22c55e;
   position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(34, 197, 94, 0.15) 0%,
+    rgba(45, 27, 78, 0.8) 100%
+  );
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.4),
+    0 0 15px rgba(34, 197, 94, 0.4),
+    inset 0 1px 0 rgba(34, 197, 94, 0.3);
+  animation: validMoveGlow 2s ease-in-out infinite;
+}
+
+@keyframes validMoveGlow {
+  0%, 100% {
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.4),
+      0 0 15px rgba(34, 197, 94, 0.4),
+      inset 0 1px 0 rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.4),
+      0 0 25px rgba(34, 197, 94, 0.6),
+      inset 0 1px 0 rgba(34, 197, 94, 0.5);
+  }
 }
 
 .halloween-cell.valid-move:hover {
+  transform: scale(1.08) translateY(-3px);
   border-color: #90ee90;
   box-shadow:
     0 0 20px rgba(0, 255, 0, 0.5),
     0 0 30px rgba(144, 238, 144, 0.3);
 }
 
+/* Enhanced valid move indicator */
 .valid-move-indicator {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 1.2rem;
-  animation: sparkle 1.5s ease-in-out infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  color: #22c55e;
+  text-shadow:
+    0 0 10px rgba(34, 197, 94, 0.8),
+    0 0 20px rgba(34, 197, 94, 0.6);
+  animation: indicatorPulse 1.5s ease-in-out infinite;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@keyframes indicatorPulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+}
+
+.halloween-cell.valid-move:hover .valid-move-indicator {
+  animation: indicatorPulse 0.5s ease-in-out infinite;
+  transform: translate(-50%, -50%) rotate(360deg);
+  transition: transform 0.5s ease;
 }
 
 @keyframes sparkle {

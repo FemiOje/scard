@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from "react";
-import "./HalloweenGrid.css";
+import "../styles/components/HalloweenGrid.css";
 import { MoveConfirmationPopup } from "./MoveConfirmationPopup";
 import { EncounterPopup } from "./EncounterPopup";
+import { PlayerStatsHUD } from "./PlayerStatsHUD";
+import { useGameStore } from "../stores/gameStore";
 import type { Position, GameStatus, EncounterState } from "../types/game";
 
 interface GridCellProps {
@@ -261,8 +263,18 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
     setSelectedCell(null);
   };
 
+  // Get player stats from store for HUD
+  const playerStats = useGameStore((state) => state.playerStats);
+
   return (
     <div className="halloween-grid-container">
+      {/* Player Stats HUD - Always visible */}
+      <PlayerStatsHUD
+        playerStats={playerStats}
+        position={playerPosition}
+        isLoading={isLoading}
+      />
+
       {/* Decorative pumpkins */}
       <PumpkinSVG className="pumpkin-decoration pumpkin-top-left" />
       <PumpkinSVG className="pumpkin-decoration pumpkin-top-right" />
@@ -355,6 +367,7 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
       {encounter && (
         <EncounterPopup
           encounter={encounter}
+          playerStats={playerStats}
           onFight={onFight}
           onFlee={onFlee}
           onOK={onClearEncounter}

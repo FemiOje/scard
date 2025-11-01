@@ -1,0 +1,173 @@
+/* HealthBar Component Styles */
+
+.health-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+/* Label Styles */
+.health-bar-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.health-bar-current {
+  color: #ffffff;
+}
+
+.health-bar-separator {
+  color: #9ca3af;
+}
+
+.health-bar-max {
+  color: #9ca3af;
+}
+
+/* Container Styles */
+.health-bar-container {
+  position: relative;
+  width: 100%;
+  height: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Fill Styles */
+.health-bar-fill {
+  height: 100%;
+  border-radius: 0.375rem;
+  transition: width 0.5s linear, background-color 0.3s ease;
+}
+
+/* Color States */
+.health-bar-high {
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+}
+
+.health-bar-medium {
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.health-bar-low {
+  background: linear-gradient(90deg, #f87171 0%, #ef4444 100%);
+}
+
+.health-bar-critical {
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+}
+
+/* Animations */
+.health-bar-animated {
+  transition: width 0.5s linear, background-color 0.3s ease;
+}
+
+.health-bar-pulse {
+  animation: healthPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes healthPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Flash effects for health changes */
+.health-bar-flash {
+  animation: healthFlash 0.5s ease-out;
+}
+
+.health-bar-flash-heal {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.8);
+}
+
+.health-bar-flash-damage {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+}
+
+@keyframes healthFlash {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+/* Highlight effects */
+.health-bar-highlight-heal {
+  animation: highlightHeal 0.8s ease-out;
+}
+
+.health-bar-highlight-damage {
+  animation: highlightDamage 0.8s ease-out;
+}
+
+@keyframes highlightHeal {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(34, 197, 94, 0.8);
+  }
+}
+
+@keyframes highlightDamage {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(239, 68, 68, 0.8);
+  }
+}
+
+/* Size Variants */
+.health-bar-small {
+  gap: 0.125rem;
+}
+
+.health-bar-small .health-bar-label {
+  font-size: 0.75rem;
+}
+
+.health-bar-small .health-bar-container {
+  height: 0.5rem;
+}
+
+.health-bar-medium {
+  gap: 0.25rem;
+}
+
+.health-bar-medium .health-bar-label {
+  font-size: 0.875rem;
+}
+
+.health-bar-medium .health-bar-container {
+  height: 0.75rem;
+}
+
+.health-bar-large {
+  gap: 0.5rem;
+}
+
+.health-bar-large .health-bar-label {
+  font-size: 1rem;
+}
+
+.health-bar-large .health-bar-container {
+  height: 1rem;
+}
+

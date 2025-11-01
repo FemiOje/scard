@@ -1,7 +1,7 @@
 // Type definitions for SCARD game
 // Extracted from useGameState.ts following Death Mountain architecture pattern
 
-import type { Position, BeastEncounter } from "../generated/typescript/models.gen";
+import type { Position, BeastEncounter, Player } from "../generated/typescript/models.gen";
 
 /**
  * Game status enumeration
@@ -44,6 +44,7 @@ export interface EncounterState {
 export interface UseGameStateReturn {
   gameId: string | null;
   playerPosition: Position | null;
+  playerStats: Player | null;
   gameStatus: GameStatus;
   encounter: EncounterState | null;
   isLoading: boolean;
@@ -56,5 +57,5 @@ export interface UseGameStateReturn {
 }
 
 // Re-export generated types for convenience
-export type { Position, BeastEncounter };
+export type { Position, BeastEncounter, Player };
 

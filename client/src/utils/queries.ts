@@ -42,3 +42,22 @@ export function buildCurrentEncounterQuery(gameId: string, namespace: string = "
     .withLimit(1);
 }
 
+/**
+ * Builds query for fetching player stats
+ * Used to get player health, attack, damage, and abilities
+ * 
+ * @param gameId - Game ID to query
+ * @param namespace - Namespace for the contract (default: "scard")
+ * @returns Query builder instance
+ */
+export function buildPlayerQuery(gameId: string, namespace: string = "scard") {
+  return new ToriiQueryBuilder<SchemaType>()
+    .withClause(
+      new ClauseBuilder()
+        .keys([`${namespace}-Player`], [gameId])
+        .build()
+    )
+    .withEntityModels([`${namespace}-Player`])
+    .withLimit(1);
+}
+

@@ -1,0 +1,206 @@
+/* PlayerStatsHUD Component Styles */
+
+.player-stats-hud {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 280px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid #fbbf24;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  z-index: 1000;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(251, 191, 36, 0.3),
+    inset 0 0 20px rgba(251, 191, 36, 0.1);
+  backdrop-filter: blur(10px);
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.player-stats-hud-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.player-stats-hud-icon {
+  font-size: 1.5rem;
+}
+
+.player-stats-hud-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Sections */
+.player-stats-hud-section {
+  margin-bottom: 1rem;
+}
+
+.player-stats-hud-section:last-child {
+  margin-bottom: 0;
+}
+
+.player-stats-hud-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Stat Groups */
+.player-stats-hud-stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-stats-hud-stat-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.player-stats-hud-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.player-stats-hud-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stat-icon {
+  font-size: 1.125rem;
+}
+
+.stat-label,
+.stat-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+.stat-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+/* Special Abilities */
+.player-stats-hud-abilities {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.player-stats-hud-ability {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.player-stats-hud-ability.ability-active {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  animation: abilityGlow 2s ease-in-out infinite;
+}
+
+.player-stats-hud-ability.ability-inactive {
+  background: rgba(75, 85, 99, 0.1);
+  border: 1px solid rgba(75, 85, 99, 0.2);
+  opacity: 0.6;
+}
+
+@keyframes abilityGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+  }
+}
+
+.ability-icon {
+  font-size: 1.125rem;
+}
+
+.ability-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  flex: 1;
+}
+
+.ability-status {
+  font-size: 1rem;
+  color: #4ade80;
+  font-weight: 700;
+}
+
+.ability-status-inactive {
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Loading & Empty States */
+.player-stats-hud-loading,
+.player-stats-hud-empty {
+  text-align: center;
+  padding: 1rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .player-stats-hud {
+    width: 240px;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.75rem;
+  }
+
+  .player-stats-hud-title {
+    font-size: 1.125rem;
+  }
+
+  .stat-label,
+  .stat-text,
+  .stat-value {
+    font-size: 0.75rem;
+  }
+}
+

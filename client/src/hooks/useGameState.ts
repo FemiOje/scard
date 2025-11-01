@@ -10,6 +10,12 @@ import { getGameId, checkWinCondition, parseEncounterType } from "../utils/game"
 import { parseEventsFromReceipt } from "../utils/events";
 import { useGameStore } from "../stores/gameStore";
 import { useSystemCalls } from "../dojo/useSystemCalls";
+import {
+  notifyGiftEncounter,
+  notifyStatChange,
+  notifyCombatResult,
+} from "../utils/notificationHelpers";
+import { calculateCombatOutcome } from "../utils/combatCalculations";
 
 /**
  * Main game state hook - thin orchestration layer
@@ -45,17 +51,20 @@ export function useGameState(): UseGameStateReturn {
   const {
     gameId,
     playerPosition,
+    playerStats,
     gameStatus,
     encounter,
     isLoading,
     error,
     setGameId,
     setPlayerPosition,
+    setPlayerStats,
     setGameStatus,
     setEncounter,
     clearEncounter,
     setIsLoading,
     setError,
+    addNotification,
   } = useGameStore();
 
   // Get Dojo system calls
@@ -66,6 +75,7 @@ export function useGameState(): UseGameStateReturn {
     dojoFlee,
     fetchBeastEncounter,
     fetchCurrentEncounter,
+    fetchPlayerStats,
     gameSystemsAddress,
     worldAddress,
   } = useSystemCalls();
@@ -118,6 +128,19 @@ export function useGameState(): UseGameStateReturn {
       setGameStatus("InProgress");
       // Clear any encounter state
       setEncounter(null);
+
+      // Fetch player stats after game creation
+      if (gameId) {
+        fetchPlayerStats(gameId)
+          .then((stats) => {
+            if (stats) {
+              setPlayerStats(stats);
+            }
+          })
+          .catch((error) => {
+            console.warn("[Create Game] Failed to fetch player stats:", error);
+          });
+      }
     } catch (err) {
       console.error("Error creating game:", err);
       setError(err instanceof Error ? err.message : "Failed to create game");
@@ -129,7 +152,9 @@ export function useGameState(): UseGameStateReturn {
     gameSystemsAddress,
     worldAddress,
     dojoCreateGame,
+    fetchPlayerStats,
     setPlayerPosition,
+    setPlayerStats,
     setGameStatus,
     setEncounter,
     setIsLoading,
@@ -211,6 +236,15 @@ export function useGameState(): UseGameStateReturn {
             console.log("[Move] 🎲 Setting encounter state:", encounterState);
             setEncounter(encounterState);
 
+            // Show notification for gift encounters
+            if (
+              encounterTypeEnum !== "Werewolf" &&
+              encounterTypeEnum !== "Vampire" &&
+              encounterTypeEnum !== "FreeRoam"
+            ) {
+              notifyGiftEncounter(encounterTypeEnum, addNotification);
+            }
+
             // Fetch beast stats in background if it's a beast encounter
             if (
               encounterTypeEnum === "Werewolf" ||
@@ -270,6 +304,66 @@ export function useGameState(): UseGameStateReturn {
       } finally {
         setIsLoading(false);
       }
+
+      // Fetch player stats after move (to reflect any gift encounter changes)
+      if (gameId) {
+        const oldStats = playerStats;
+        fetchPlayerStats(gameId)
+          .then((stats) => {
+            if (stats) {
+              setPlayerStats(stats);
+
+              // Detect stat changes and show notifications
+              if (oldStats) {
+                const oldHealth = Number(oldStats.health);
+                const newHealth = Number(stats.health);
+                const oldAttack = Number(oldStats.attack_points);
+                const newAttack = Number(stats.attack_points);
+                const oldDamage = Number(oldStats.damage_points);
+                const newDamage = Number(stats.damage_points);
+
+                // Health change (from gift encounters)
+                if (newHealth !== oldHealth) {
+                  const healthChange = newHealth - oldHealth;
+                  notifyStatChange("health", healthChange, addNotification);
+                }
+
+                // Attack change
+                if (newAttack !== oldAttack) {
+                  const attackChange = newAttack - oldAttack;
+                  notifyStatChange("attack", attackChange, addNotification);
+                }
+
+                // Damage reduction change
+                if (newDamage !== oldDamage) {
+                  const damageChange = newDamage - oldDamage;
+                  notifyStatChange("damage", damageChange, addNotification);
+                }
+
+                // Ability gains
+                if (!oldStats.has_free_attack && stats.has_free_attack) {
+                  addNotification({
+                    id: `${Date.now()}-${Math.random()}`,
+                    type: "success",
+                    message: "🎯 Free Attack ability gained! Next fight will take no damage!",
+                    icon: "🎯",
+                  });
+                }
+                if (!oldStats.has_free_flee && stats.has_free_flee) {
+                  addNotification({
+                    id: `${Date.now()}-${Math.random()}`,
+                    type: "success",
+                    message: "🏃 Free Flee ability gained! Next flee will take no damage!",
+                    icon: "🏃",
+                  });
+                }
+              }
+            }
+          })
+          .catch((error) => {
+            console.warn("[Move] Failed to fetch player stats:", error);
+          });
+      }
     },
     [
       gameId,
@@ -279,12 +373,16 @@ export function useGameState(): UseGameStateReturn {
       playerPosition,
       dojoMove,
       fetchBeastEncounter,
+      fetchPlayerStats,
       checkWinCondition,
       setEncounter,
       setPlayerPosition,
+      setPlayerStats,
       setGameStatus,
+      addNotification,
       setIsLoading,
       setError,
+      playerStats,
     ]
   );
 
@@ -329,11 +427,66 @@ export function useGameState(): UseGameStateReturn {
         return;
       }
 
+      // Calculate combat prediction before fight
+      let combatPrediction = null;
+      if (playerStats && encounter.beastStats) {
+        combatPrediction = calculateCombatOutcome(playerStats, encounter.beastStats);
+      }
+
       // Call Dojo system
       await dojoFight(gameId);
 
       // Clear encounter after fight
       setEncounter(null);
+
+      // Show combat result notification
+      if (combatPrediction) {
+        const outcome = combatPrediction.fightOutcome;
+        const result = outcome.playerDied ? "died" : "victory";
+        notifyCombatResult(
+          result,
+          outcome.playerDamageTaken,
+          outcome.usesFreeAttack,
+          addNotification
+        );
+      }
+
+      // Fetch player stats after fight (health may have changed)
+      if (gameId) {
+        const oldStats = playerStats;
+        fetchPlayerStats(gameId)
+          .then((stats) => {
+            if (stats) {
+              setPlayerStats(stats);
+
+              // Detect health change
+              if (oldStats) {
+                const oldHealth = Number(oldStats.health);
+                const newHealth = Number(stats.health);
+                if (newHealth !== oldHealth) {
+                  const healthChange = newHealth - oldHealth;
+                  if (healthChange < 0) {
+                    // Only notify if health decreased (already notified in combat result)
+                    // But if it's a significant change, show detailed notification
+                  }
+                }
+
+                // Check if player died
+                if (newHealth === 0) {
+                  addNotification({
+                    id: `${Date.now()}-${Math.random()}`,
+                    type: "error",
+                    message: "💀 You died! Game over.",
+                    icon: "💀",
+                  });
+                }
+              }
+            }
+          })
+          .catch((error) => {
+            console.warn("[Fight] Failed to fetch player stats:", error);
+          });
+      }
 
       // Check if player died (game status might be Lost now)
       // We can parse CombatEvent from receipt or check game state
@@ -347,9 +500,13 @@ export function useGameState(): UseGameStateReturn {
   }, [
     gameId,
     encounter,
+    playerStats,
     dojoFight,
     fetchCurrentEncounter,
+    fetchPlayerStats,
     setEncounter,
+    setPlayerStats,
+    addNotification,
     setIsLoading,
     setError,
   ]);
@@ -395,11 +552,59 @@ export function useGameState(): UseGameStateReturn {
         return;
       }
 
+      // Calculate combat prediction before flee
+      let combatPrediction = null;
+      if (playerStats && encounter.beastStats) {
+        combatPrediction = calculateCombatOutcome(playerStats, encounter.beastStats);
+      }
+
       // Call Dojo system
       await dojoFlee(gameId);
 
       // Clear encounter after flee
       setEncounter(null);
+
+      // Show combat result notification
+      if (combatPrediction) {
+        const outcome = combatPrediction.fleeOutcome;
+        const result = outcome.playerDied ? "died" : "fled";
+        notifyCombatResult(
+          result,
+          outcome.playerDamageTaken,
+          outcome.usesFreeFlee,
+          addNotification
+        );
+      }
+
+      // Fetch player stats after flee (health may have changed, ability consumed)
+      if (gameId) {
+        const oldStats = playerStats;
+        fetchPlayerStats(gameId)
+          .then((stats) => {
+            if (stats) {
+              setPlayerStats(stats);
+
+              // Detect ability consumption (Free Flee was used)
+              if (oldStats?.has_free_flee && !stats.has_free_flee) {
+                // Already notified in combat result, but could add additional message if needed
+              }
+
+              // Check if player died
+              const newHealth = Number(stats.health);
+              if (newHealth === 0) {
+                addNotification({
+                  id: `${Date.now()}-${Math.random()}`,
+                  type: "error",
+                  message: "💀 You died! Game over.",
+                  icon: "💀",
+                });
+              }
+            }
+          })
+          .catch((error) => {
+            console.warn("[Flee] Failed to fetch player stats:", error);
+          });
+      }
 
       // Check if player died (game status might be Lost now)
       console.log("[Flee] ✅ Flee completed");
@@ -412,9 +617,13 @@ export function useGameState(): UseGameStateReturn {
   }, [
     gameId,
     encounter,
+    playerStats,
     dojoFlee,
     fetchCurrentEncounter,
+    fetchPlayerStats,
     setEncounter,
+    setPlayerStats,
+    addNotification,
     setIsLoading,
     setError,
   ]);
@@ -438,6 +647,7 @@ export function useGameState(): UseGameStateReturn {
   return {
     gameId,
     playerPosition,
+    playerStats,
     gameStatus,
     encounter,
     isLoading,

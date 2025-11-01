@@ -4,8 +4,10 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { HalloweenGrid } from "./components/HalloweenGrid";
 import { SplashScreen } from "./components/SplashScreen";
 import { WinScreen } from "./components/WinScreen";
+import { NotificationContainer } from "./components/NotificationToast";
 import { useGameState } from "./hooks/useGameState";
-import "./App.css";
+import { useGameStore } from "./stores/gameStore";
+import "./styles/App.css";
 
 function App() {
   const { address, status, connector } = useAccount();
@@ -32,6 +34,10 @@ function App() {
     () => ControllerConnector.fromConnectors(connectors),
     [connectors]
   );
+
+  // Get notifications from store
+  const notifications = useGameStore((state) => state.notifications);
+  const removeNotification = useGameStore((state) => state.removeNotification);
 
   // Check if controller is ready
   useEffect(() => {
@@ -195,6 +201,12 @@ function App() {
           isCreatingGame={isGameLoading}
         />
       )}
+
+      {/* Notification Toast Container */}
+      <NotificationContainer
+        notifications={notifications}
+        onDismiss={removeNotification}
+      />
 
       {/* Error display */}
       {gameError && (

@@ -1,5 +1,5 @@
 import React from "react";
-import "./SplashScreen.css";
+import "../styles/components/SplashScreen.css";
 
 interface SplashScreenProps {
   onStartNewGame: () => void;

@@ -14,8 +14,9 @@ import {
   BEAST_TYPE_MAP,
   directionToEnum,
 } from "../constants/game";
-import { buildBeastQuery, buildCurrentEncounterQuery } from "../utils/queries";
+import { buildBeastQuery, buildCurrentEncounterQuery, buildPlayerQuery } from "../utils/queries";
 import type { Direction, BeastEncounter } from "../types/game";
+import type { Player } from "../generated/typescript/models.gen";
 
 /**
  * Delay helper function
@@ -329,6 +330,104 @@ export function useSystemCalls() {
     }
   };
 
+  /**
+   * Fetch player stats from Dojo SDK
+   * With retry logic to handle indexer lag
+   * @param gameId - Game ID to query
+   * @returns Player model or null
+   */
+  const fetchPlayerStats = async (
+    gameId: string
+  ): Promise<Player | null> => {
+    if (!sdk || !gameId) {
+      console.warn("[Player Stats] SDK or gameId not available", {
+        sdk: !!sdk,
+        gameId,
+      });
+      return null;
+    }
+
+    // Retry logic: try up to QUERY_MAX_RETRIES times with increasing delays
+    for (let attempt = 0; attempt < QUERY_MAX_RETRIES; attempt++) {
+      try {
+        // Wait for indexer to catch up (exponential backoff)
+        const delay = QUERY_BASE_DELAY * (attempt + 1);
+        if (attempt > 0) {
+          console.log(
+            `[Player Stats] Retry attempt ${attempt + 1}/${QUERY_MAX_RETRIES}, waiting ${delay}ms...`
+          );
+        }
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        // Build and execute query
+        const query = buildPlayerQuery(gameId);
+        const response = await sdk.getEntities({ query });
+        const items = response.getItems();
+
+        if (items && items.length > 0) {
+          const entity = items[0];
+          // Extract model from entity structure
+          const model =
+            entity?.models?.scard?.Player ||
+            entity?.models?.["scard"]?.["Player"];
+
+          if (model) {
+            const health = Number(model.health);
+            const attackPoints = Number(model.attack_points);
+            const damagePoints = Number(model.damage_points);
+
+            // Validate that stats are reasonable (not all zeros)
+            if (health === 0 && attackPoints === 0 && damagePoints === 0) {
+              if (attempt < QUERY_MAX_RETRIES - 1) {
+                console.log(
+                  `[Player Stats] Got invalid Player (all stats: 0), retrying...`
+                );
+                continue; // Retry
+              } else {
+                console.warn(
+                  "[Player Stats] Player has all zero stats after all retries, giving up:",
+                  model
+                );
+                return null;
+              }
+            }
+
+            console.log(
+              "[Player Stats] ✅ Fetched Player via SDK:",
+              model
+            );
+            return model as Player;
+          }
+        }
+
+        // If no model found, retry (might be indexer lag)
+        if (attempt < QUERY_MAX_RETRIES - 1) {
+          console.log(
+            `[Player Stats] No Player found, retrying (attempt ${attempt + 1}/${QUERY_MAX_RETRIES})...`
+          );
+          continue;
+        }
+
+        console.warn(
+          "[Player Stats] No Player model found for gameId after all retries:",
+          gameId
+        );
+      } catch (error) {
+        console.warn(
+          `[Player Stats] Error fetching Player (attempt ${attempt + 1}):`,
+          error
+        );
+        // If it's the last attempt, give up
+        if (attempt === QUERY_MAX_RETRIES - 1) {
+          return null;
+        }
+        // Otherwise continue to next retry
+      }
+    }
+
+    return null;
+  };
+
   return {
     // System calls
     dojoCreateGame,
@@ -338,6 +437,7 @@ export function useSystemCalls() {
     // Data fetching
     fetchBeastEncounter,
     fetchCurrentEncounter,
+    fetchPlayerStats,
     // Contract addresses (for event parsing)
     gameSystemsAddress,
     worldAddress,
