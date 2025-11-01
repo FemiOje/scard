@@ -85,24 +85,23 @@ export function parseEventsFromReceipt(
         // Try to parse EncounterGenerated event
         // EncounterGenerated: { #[key] game_id, encounter_type }
         // In Dojo, #[key] fields are in keys array, regular fields are in data
-        // The encounter_type (u8) should be in data array
-        // For EncounterGenerated, data should contain: [encounter_type] or [version, encounter_type]
-        if (evt.data.length >= 1 && evt.data.length < 6) {
-          // Check all data positions that could contain encounter_type
-          for (let i = 0; i < Math.min(evt.data.length, 3); i++) {
-            const possibleType = parseInt(evt.data[i], 16);
-            if (
-              !Number.isNaN(possibleType) &&
-              possibleType >= 1 &&
-              possibleType <= 8
-            ) {
-              encounterType = possibleType;
-              console.log(
-                `[Receipt] ✅ Parsed encounter type from data[${i}]:`,
-                possibleType
-              );
-              break; // Found valid encounter type, stop searching
-            }
+        // Dojo event serialization adds metadata fields at the start
+        // For EncounterGenerated with 4 data fields: [version, game_id_low, game_id_high, encounter_type]
+        // The actual encounter_type is at the LAST position (data[3])
+        if (evt.data.length === 4) {
+          // EncounterGenerated event has exactly 4 data fields
+          // Read encounter_type from the last position
+          const possibleType = parseInt(evt.data[3], 16);
+          if (
+            !Number.isNaN(possibleType) &&
+            possibleType >= 1 &&
+            possibleType <= 8
+          ) {
+            encounterType = possibleType;
+            console.log(
+              `[Receipt] ✅ Parsed encounter type from data[3]:`,
+              possibleType
+            );
           }
         }
       }

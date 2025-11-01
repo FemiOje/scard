@@ -14,7 +14,7 @@ import {
   BEAST_TYPE_MAP,
   directionToEnum,
 } from "../constants/game";
-import { buildBeastQuery } from "../utils/queries";
+import { buildBeastQuery, buildCurrentEncounterQuery } from "../utils/queries";
 import type { Direction, BeastEncounter } from "../types/game";
 
 /**
@@ -290,6 +290,45 @@ export function useSystemCalls() {
     return null;
   };
 
+  /**
+   * Fetch current encounter from Dojo SDK
+   * Used to verify encounter state before fight/flee
+   * @param gameId - Game ID to query
+   * @returns CurrentEncounter model or null
+   */
+  const fetchCurrentEncounter = async (
+    gameId: string
+  ): Promise<{ encounter_type: number } | null> => {
+    if (!sdk || !gameId) {
+      console.warn("[Encounter] SDK or gameId not available");
+      return null;
+    }
+
+    try {
+      const query = buildCurrentEncounterQuery(gameId);
+      const response = await sdk.getEntities({ query });
+      const items = response.getItems();
+
+      if (items && items.length > 0) {
+        const entity = items[0];
+        const model =
+          entity?.models?.scard?.CurrentEncounter ||
+          entity?.models?.["scard"]?.["CurrentEncounter"];
+
+        if (model) {
+          console.log("[Encounter] ✅ Fetched CurrentEncounter:", model);
+          return model as { encounter_type: number };
+        }
+      }
+
+      console.warn("[Encounter] No CurrentEncounter model found for gameId:", gameId);
+      return null;
+    } catch (error) {
+      console.warn("[Encounter] Error fetching CurrentEncounter:", error);
+      return null;
+    }
+  };
+
   return {
     // System calls
     dojoCreateGame,
@@ -298,6 +337,7 @@ export function useSystemCalls() {
     dojoFlee,
     // Data fetching
     fetchBeastEncounter,
+    fetchCurrentEncounter,
     // Contract addresses (for event parsing)
     gameSystemsAddress,
     worldAddress,

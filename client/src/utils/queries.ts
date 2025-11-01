@@ -23,3 +23,22 @@ export function buildBeastQuery(gameId: string, namespace: string = "scard") {
     .withLimit(1);
 }
 
+/**
+ * Builds query for fetching current encounter
+ * Used to verify encounter state before fight/flee
+ * 
+ * @param gameId - Game ID to query
+ * @param namespace - Namespace for the contract (default: "scard")
+ * @returns Query builder instance
+ */
+export function buildCurrentEncounterQuery(gameId: string, namespace: string = "scard") {
+  return new ToriiQueryBuilder<SchemaType>()
+    .withClause(
+      new ClauseBuilder()
+        .keys([`${namespace}-CurrentEncounter`], [gameId])
+        .build()
+    )
+    .withEntityModels([`${namespace}-CurrentEncounter`])
+    .withLimit(1);
+}
+

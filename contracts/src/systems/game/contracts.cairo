@@ -137,6 +137,11 @@ mod game_systems {
             let mut game_state: scard::models::GameState = world.read_model(game_id);
             assert(game_state.is_in_progress(), 'game is not in progress');
 
+            // Check if player is already in a beast encounter - don't allow movement
+            // Player must fight or flee before moving again
+            let current_encounter: scard::models::CurrentEncounter = world.read_model(game_id);
+            assert(!current_encounter.is_beast_encounter(), 'must resolve encounter first');
+
             let mut position: Position = world.read_model(game_id);
             position.move_in_direction(direction);
 
@@ -189,7 +194,7 @@ mod game_systems {
                         let mut player: Player = world.read_model(game_id);
                         apply_encounter_effects(ref player, encounter_type);
                         world.write_model(@player);
-                        
+
                         // Clear BeastEncounter model by overwriting with empty values
                         // This ensures only beast encounters have valid BeastEncounter models
                         let empty_beast = BeastEncounterTrait::new(game_id, Beast::None, 0, 0);
@@ -359,7 +364,7 @@ mod game_systems {
                 // Player survived: flee successful, end encounter
                 let encounter = CurrentEncounterTrait::new(game_id, Encounter::FreeRoam);
                 world.write_model(@encounter);
-                
+
                 // Clear BeastEncounter model by overwriting with empty values
                 // This prevents stale beast data from persisting
                 let empty_beast = BeastEncounterTrait::new(game_id, Beast::None, 0, 0);

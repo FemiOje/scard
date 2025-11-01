@@ -65,6 +65,7 @@ export function useGameState(): UseGameStateReturn {
     dojoFight,
     dojoFlee,
     fetchBeastEncounter,
+    fetchCurrentEncounter,
     gameSystemsAddress,
     worldAddress,
   } = useSystemCalls();
@@ -142,6 +143,17 @@ export function useGameState(): UseGameStateReturn {
       if (gameStatus === "Won") {
         console.warn("[Move] Cannot move - game is already won");
         setError("Game is already won. Please start a new game.");
+        return;
+      }
+
+      // Prevent movement if player is in a beast encounter
+      // Player must fight or flee before moving again
+      if (
+        encounter &&
+        (encounter.type === "Werewolf" || encounter.type === "Vampire")
+      ) {
+        console.warn("[Move] Cannot move - must resolve encounter first");
+        setError("You must fight or flee before moving again.");
         return;
       }
 
@@ -295,6 +307,28 @@ export function useGameState(): UseGameStateReturn {
     setError(null);
 
     try {
+      // Verify encounter state with contract before fighting
+      // This prevents "not in beast encounter" errors due to state mismatch
+      const currentEncounter = await fetchCurrentEncounter(gameId);
+      if (!currentEncounter) {
+        setError("Could not verify encounter state. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if encounter type matches (1 = Werewolf, 2 = Vampire)
+      const encounterTypeNum = Number(currentEncounter.encounter_type);
+      const isBeastEncounter = encounterTypeNum === 1 || encounterTypeNum === 2;
+      
+      if (!isBeastEncounter) {
+        setError(
+          "Not in a beast encounter. The encounter may have been resolved or expired."
+        );
+        setEncounter(null); // Clear stale encounter state
+        setIsLoading(false);
+        return;
+      }
+
       // Call Dojo system
       await dojoFight(gameId);
 
@@ -310,7 +344,15 @@ export function useGameState(): UseGameStateReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [gameId, encounter, dojoFight, setEncounter, setIsLoading, setError]);
+  }, [
+    gameId,
+    encounter,
+    dojoFight,
+    fetchCurrentEncounter,
+    setEncounter,
+    setIsLoading,
+    setError,
+  ]);
 
   // Flee function
   const flee = useCallback(async () => {
@@ -331,6 +373,28 @@ export function useGameState(): UseGameStateReturn {
     setError(null);
 
     try {
+      // Verify encounter state with contract before fleeing
+      // This prevents "not in beast encounter" errors due to state mismatch
+      const currentEncounter = await fetchCurrentEncounter(gameId);
+      if (!currentEncounter) {
+        setError("Could not verify encounter state. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if encounter type matches (1 = Werewolf, 2 = Vampire)
+      const encounterTypeNum = Number(currentEncounter.encounter_type);
+      const isBeastEncounter = encounterTypeNum === 1 || encounterTypeNum === 2;
+      
+      if (!isBeastEncounter) {
+        setError(
+          "Not in a beast encounter. The encounter may have been resolved or expired."
+        );
+        setEncounter(null); // Clear stale encounter state
+        setIsLoading(false);
+        return;
+      }
+
       // Call Dojo system
       await dojoFlee(gameId);
 
@@ -345,7 +409,15 @@ export function useGameState(): UseGameStateReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [gameId, encounter, dojoFlee, setEncounter, setIsLoading, setError]);
+  }, [
+    gameId,
+    encounter,
+    dojoFlee,
+    fetchCurrentEncounter,
+    setEncounter,
+    setIsLoading,
+    setError,
+  ]);
 
   // Sync check: Validate that gameStatus matches position state
   useEffect(() => {
