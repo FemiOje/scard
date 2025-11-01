@@ -7,7 +7,7 @@ import {
 } from "@starknet-react/core";
 import ControllerConnector from "@cartridge/connector/controller";
 import { SessionPolicies } from "@cartridge/controller";
-import manifest from "../../contracts/manifest_sepolia.json";
+import manifest from "../../../contracts/manifest_sepolia.json";
 
 const scardGameContract = manifest.contracts.find(
   (contract) => contract.tag === "scard-game_systems"
@@ -73,3 +73,4 @@ export default function StarknetProvider({ children }: PropsWithChildren) {
     </StarknetConfig>
   );
 }
+

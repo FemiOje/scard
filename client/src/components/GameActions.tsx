@@ -2,7 +2,7 @@ import { useAccount } from "@starknet-react/core";
 import { useDojoSDK } from "@dojoengine/sdk/react";
 import { useState, useEffect } from "react";
 import { CairoCustomEnum } from "starknet";
-import type { Position } from "../typescript/models.gen";
+import type { Position } from "../types/game";
 
 // Component for calling game actions and displaying player state
 export function GameActions() {

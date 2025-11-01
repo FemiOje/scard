@@ -1,66 +1,73 @@
 import { useAccount } from "@starknet-react/core";
-import { useDojoSDK } from "@dojoengine/sdk/react";
-import { useState, useEffect, useCallback } from "react";
-import { CairoCustomEnum } from "starknet";
-import type { Position } from "../typescript/models.gen";
-import { setupWorld } from "../typescript/contracts.gen";
-import { dojoConfig } from "../../dojoConfig";
-import { getContractByName } from "@dojoengine/core";
-
-export type GameStatus = "InProgress" | "Won" | "Lost";
-
-interface UseGameStateReturn {
-  gameId: string | null;
-  playerPosition: Position | null;
-  gameStatus: GameStatus;
-  isLoading: boolean;
-  error: string | null;
-  createGame: () => Promise<void>;
-  movePlayer: (direction: "Left" | "Right" | "Up" | "Down") => Promise<void>;
-}
+import { useEffect, useCallback } from "react";
+import type {
+  Direction,
+  EncounterState,
+  UseGameStateReturn,
+  Position,
+} from "../types/game";
+import { getGameId, checkWinCondition, parseEncounterType } from "../utils/game";
+import { parseEventsFromReceipt } from "../utils/events";
+import { useGameStore } from "../stores/gameStore";
+import { useSystemCalls } from "../dojo/useSystemCalls";
 
 /**
- * Custom hook to manage game state and interact with Dojo game systems
- * Mirrors death-mountain's approach: parses position from transaction receipts
+ * Main game state hook - thin orchestration layer
+ * Coordinates between Zustand store, Dojo system calls, and business logic
+ * 
+ * @returns {UseGameStateReturn} Game state and actions for components
+ * 
+ * @example
+ * ```tsx
+ * function GameComponent() {
+ *   const { 
+ *     playerPosition, 
+ *     gameStatus, 
+ *     encounter,
+ *     movePlayer, 
+ *     fight, 
+ *     flee 
+ *   } = useGameState();
+ *   
+ *   return (
+ *     <div>
+ *       <button onClick={() => movePlayer("Up")}>Move Up</button>
+ *       {encounter && <EncounterPopup encounter={encounter} />}
+ *     </div>
+ *   );
+ * }
+ * ```
  */
 export function useGameState(): UseGameStateReturn {
-  const { account, address } = useAccount();
-  const dojoSDK = useDojoSDK();
-  const { provider } = dojoSDK as any;
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [playerPosition, setPlayerPosition] = useState<Position | null>(null);
-  const [gameStatus, setGameStatus] = useState<GameStatus>("InProgress");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { address } = useAccount();
 
-  // Grid size constant - win condition is at bottom-right corner
-  const GRID_SIZE = 5;
-  const WIN_X = GRID_SIZE - 1; // 4
-  const WIN_Y = GRID_SIZE - 1; // 4
+  // Get state and actions from Zustand store
+  const {
+    gameId,
+    playerPosition,
+    gameStatus,
+    encounter,
+    isLoading,
+    error,
+    setGameId,
+    setPlayerPosition,
+    setGameStatus,
+    setEncounter,
+    clearEncounter,
+    setIsLoading,
+    setError,
+  } = useGameStore();
 
-  const getGameId = useCallback((addr: string): string => {
-    if (!addr) return "0";
-    const hexPart = addr.slice(2, 18);
-    return BigInt(`0x${hexPart}`).toString();
-  }, []);
-
-  const gameActions = provider ? setupWorld(provider as any) : null;
-
-  // Resolve game_systems contract address from manifest
-  const gameSystemsAddress: string | undefined = (() => {
-    try {
-      return getContractByName(
-        dojoConfig.manifest as any,
-        "scard",
-        "game_systems"
-      )?.address;
-    } catch {
-      return undefined;
-    }
-  })();
-
-  // Get World contract address from dojoConfig
-  const worldAddress: string | undefined = dojoConfig?.manifest?.world?.address;
+  // Get Dojo system calls
+  const {
+    dojoCreateGame,
+    dojoMove,
+    dojoFight,
+    dojoFlee,
+    fetchBeastEncounter,
+    gameSystemsAddress,
+    worldAddress,
+  } = useSystemCalls();
 
   useEffect(() => {
     if (address) {
@@ -71,108 +78,12 @@ export function useGameState(): UseGameStateReturn {
       setPlayerPosition(null);
       setGameStatus("InProgress");
     }
-  }, [address, getGameId]);
-
-  /**
-   * Check if position indicates win condition
-   * Invariant: gameStatus === "Won" IFF position === (4, 4)
-   */
-  const checkWinCondition = useCallback(
-    (position: { x: number; y: number }): boolean => {
-      return position.x === WIN_X && position.y === WIN_Y;
-    },
-    []
-  );
-
-  /**
-   * Wait for transaction confirmation with retries
-   * Based on death-mountain's waitForTransaction pattern
-   */
-  const waitForTransaction = async (
-    txHash: string,
-    retries: number = 0
-  ): Promise<any> => {
-    if (retries > 9) {
-      throw new Error("Transaction confirmation timeout");
-    }
-
-    try {
-      const receipt: any = await account!.waitForTransaction(txHash, {
-        retryInterval: 350,
-        successStates: ["ACCEPTED_ON_L2", "ACCEPTED_ON_L1"],
-      });
-
-      return receipt;
-    } catch (error) {
-      console.error("Error waiting for transaction, retrying:", error);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return waitForTransaction(txHash, retries + 1);
-    }
-  };
-
-  /**
-   * Parse position coordinates from transaction receipt events
-   * In Dojo, events are emitted from the World contract, but encode the system in keys[2]
-   * Event data structure: [version, game_id, ..., x, y]
-   * Position is at data[4] (x) and data[5] (y)
-   */
-  const parsePositionFromReceipt = (
-    receipt: any,
-    gameSystemsAddress: string,
-    worldAddress: string
-  ): { x: number; y: number } | null => {
-    try {
-      if (!receipt.events || !Array.isArray(receipt.events)) {
-        console.warn("[Receipt] No events array in receipt");
-        return null;
-      }
-
-      // Filter events from World contract where keys[2] matches game_systems address
-      const gameEvents = receipt.events.filter((evt: any) => {
-        const fromWorld =
-          evt.from_address?.toLowerCase() === worldAddress?.toLowerCase();
-        const hasGameSystemsKey =
-          evt.keys &&
-          evt.keys.length >= 3 &&
-          evt.keys[2]?.toLowerCase() === gameSystemsAddress?.toLowerCase();
-        return fromWorld && hasGameSystemsKey;
-      });
-
-      console.log("[Receipt] Game events found:", gameEvents.length);
-
-      // Try to find GameCreated or Moved event with position data
-      // Position is at data[4] (x) and data[5] (y)
-      for (const evt of gameEvents) {
-        if (evt.data && evt.data.length >= 6) {
-          // data[4] = x coordinate, data[5] = y coordinate
-          const x = parseInt(evt.data[4], 16);
-          const y = parseInt(evt.data[5], 16);
-
-          if (!Number.isNaN(x) && !Number.isNaN(y)) {
-            console.log("[Receipt] ✅ Successfully parsed position:", { x, y });
-            return { x, y };
-          }
-        }
-      }
-
-      console.warn("[Receipt] No valid position found in events");
-      return null;
-    } catch (error) {
-      console.error("Error parsing position from receipt:", error);
-      return null;
-    }
-  };
+  }, [address, setGameId, setPlayerPosition, setGameStatus]);
 
   // Create new game
   const createGame = useCallback(async () => {
-    if (
-      !account ||
-      !gameActions ||
-      !gameId ||
-      !gameSystemsAddress ||
-      !worldAddress
-    ) {
-      setError("Account or game actions not available");
+    if (!gameId || !gameSystemsAddress || !worldAddress) {
+      setError("Game ID or contract addresses not available");
       return;
     }
 
@@ -180,18 +91,11 @@ export function useGameState(): UseGameStateReturn {
     setError(null);
 
     try {
-      const tx = await gameActions.game_systems.createGame(account, gameId);
-      console.log("[Create Game] Transaction hash:", tx.transaction_hash);
+      // Call Dojo system
+      const receipt = await dojoCreateGame(gameId);
 
-      // Wait for transaction confirmation
-      const receipt = await waitForTransaction(tx.transaction_hash);
-
-      if (receipt.execution_status === "REVERTED") {
-        throw new Error("Transaction reverted");
-      }
-
-      // Parse position from receipt
-      const position = parsePositionFromReceipt(
+      // Parse events from receipt
+      const { position } = parseEventsFromReceipt(
         receipt,
         gameSystemsAddress,
         worldAddress
@@ -211,17 +115,29 @@ export function useGameState(): UseGameStateReturn {
 
       // Reset game status to InProgress when creating new game
       setGameStatus("InProgress");
+      // Clear any encounter state
+      setEncounter(null);
     } catch (err) {
       console.error("Error creating game:", err);
       setError(err instanceof Error ? err.message : "Failed to create game");
     } finally {
       setIsLoading(false);
     }
-  }, [account, gameActions, gameId, gameSystemsAddress, worldAddress]);
+  }, [
+    gameId,
+    gameSystemsAddress,
+    worldAddress,
+    dojoCreateGame,
+    setPlayerPosition,
+    setGameStatus,
+    setEncounter,
+    setIsLoading,
+    setError,
+  ]);
 
   // Move player
   const movePlayer = useCallback(
-    async (direction: "Left" | "Right" | "Up" | "Down") => {
+    async (direction: Direction) => {
       // Edge case: Prevent movement if game is already won
       if (gameStatus === "Won") {
         console.warn("[Move] Cannot move - game is already won");
@@ -229,38 +145,24 @@ export function useGameState(): UseGameStateReturn {
         return;
       }
 
-      if (
-        !account ||
-        !gameActions ||
-        !gameId ||
-        !gameSystemsAddress ||
-        !worldAddress
-      ) {
-        setError("Account or game actions not available");
+      if (!gameId || !gameSystemsAddress || !worldAddress) {
+        setError("Game ID or contract addresses not available");
         return;
       }
+
+      // Clear encounter state at START of move (before parsing new events)
+      // This ensures we don't show stale encounter data
+      setEncounter(null);
 
       setIsLoading(true);
       setError(null);
 
       try {
-        const directionEnum = new CairoCustomEnum({ [direction]: {} });
-        const tx = await gameActions.game_systems.move(
-          account,
-          gameId,
-          directionEnum
-        );
-        console.log("[Move] Transaction hash:", tx.transaction_hash);
+        // Call Dojo system
+        const receipt = await dojoMove(gameId, direction);
 
-        // Wait for transaction confirmation
-        const receipt = await waitForTransaction(tx.transaction_hash);
-
-        if (receipt.execution_status === "REVERTED") {
-          throw new Error("Transaction reverted");
-        }
-
-        // Parse new position from receipt
-        const position = parsePositionFromReceipt(
+        // Parse events from receipt (position and encounter)
+        const { position, encounterType } = parseEventsFromReceipt(
           receipt,
           gameSystemsAddress,
           worldAddress
@@ -280,6 +182,59 @@ export function useGameState(): UseGameStateReturn {
           if (isWin) {
             setGameStatus("Won");
             console.log("[Move] 🎉 Game won! Position reached (4, 4)");
+            // Clear encounter on win
+            setEncounter(null);
+          } else if (encounterType !== null) {
+            // Parse and set encounter
+            const encounterTypeEnum = parseEncounterType(encounterType);
+            console.log("[Move] 🎲 Encounter generated:", encounterTypeEnum);
+
+            // Set encounter immediately to trigger UI update
+            // For beast encounters, fetch stats in background (non-blocking)
+            const encounterState: EncounterState = {
+              type: encounterTypeEnum,
+              beastStats: null,
+            };
+
+            console.log("[Move] 🎲 Setting encounter state:", encounterState);
+            setEncounter(encounterState);
+
+            // Fetch beast stats in background if it's a beast encounter
+            if (
+              encounterTypeEnum === "Werewolf" ||
+              encounterTypeEnum === "Vampire"
+            ) {
+              // Fetch beast stats and update encounter (non-blocking)
+              // Pass expected encounter type to validate we get the right beast
+              fetchBeastEncounter(gameId, encounterTypeEnum)
+                .then((beastStats) => {
+                  if (beastStats) {
+                    console.log(
+                      "[Move] 🎲 Updating encounter with beast stats:",
+                      beastStats
+                    );
+                    setEncounter({
+                      type: encounterTypeEnum,
+                      beastStats,
+                    });
+                  } else {
+                    console.warn(
+                      "[Move] ⚠️ Could not fetch beast stats after retries. Encounter will show without stats."
+                    );
+                    // Keep encounter state - UI can still display encounter type
+                  }
+                })
+                .catch((error) => {
+                  console.warn(
+                    "[Encounter] Failed to fetch beast stats after all retries:",
+                    error
+                  );
+                  // Keep encounter state even without stats - UI can still display encounter type
+                });
+            }
+          } else {
+            // No encounter generated - clear encounter state
+            setEncounter(null);
           }
         } else {
           console.warn("[Move] Could not parse position from receipt");
@@ -293,6 +248,7 @@ export function useGameState(): UseGameStateReturn {
             if (isWin) {
               setGameStatus("Won");
               console.log("[Move] 🎉 Game won! (detected via position state)");
+              setEncounter(null);
             }
           }
         }
@@ -304,16 +260,92 @@ export function useGameState(): UseGameStateReturn {
       }
     },
     [
-      account,
-      gameActions,
       gameId,
       gameSystemsAddress,
       worldAddress,
       gameStatus,
       playerPosition,
+      dojoMove,
+      fetchBeastEncounter,
       checkWinCondition,
+      setEncounter,
+      setPlayerPosition,
+      setGameStatus,
+      setIsLoading,
+      setError,
     ]
   );
+
+  // Fight function
+  const fight = useCallback(async () => {
+    if (!gameId) {
+      setError("Game ID not available");
+      return;
+    }
+
+    if (
+      !encounter ||
+      (encounter.type !== "Werewolf" && encounter.type !== "Vampire")
+    ) {
+      setError("Not in a beast encounter");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Call Dojo system
+      await dojoFight(gameId);
+
+      // Clear encounter after fight
+      setEncounter(null);
+
+      // Check if player died (game status might be Lost now)
+      // We can parse CombatEvent from receipt or check game state
+      console.log("[Fight] ✅ Fight completed");
+    } catch (err) {
+      console.error("Error fighting:", err);
+      setError(err instanceof Error ? err.message : "Failed to fight");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [gameId, encounter, dojoFight, setEncounter, setIsLoading, setError]);
+
+  // Flee function
+  const flee = useCallback(async () => {
+    if (!gameId) {
+      setError("Game ID not available");
+      return;
+    }
+
+    if (
+      !encounter ||
+      (encounter.type !== "Werewolf" && encounter.type !== "Vampire")
+    ) {
+      setError("Not in a beast encounter");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Call Dojo system
+      await dojoFlee(gameId);
+
+      // Clear encounter after flee
+      setEncounter(null);
+
+      // Check if player died (game status might be Lost now)
+      console.log("[Flee] ✅ Flee completed");
+    } catch (err) {
+      console.error("Error fleeing:", err);
+      setError(err instanceof Error ? err.message : "Failed to flee");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [gameId, encounter, dojoFlee, setEncounter, setIsLoading, setError]);
 
   // Sync check: Validate that gameStatus matches position state
   useEffect(() => {
@@ -335,9 +367,13 @@ export function useGameState(): UseGameStateReturn {
     gameId,
     playerPosition,
     gameStatus,
+    encounter,
     isLoading,
     error,
     createGame,
     movePlayer,
+    fight,
+    flee,
+    clearEncounter,
   };
 }

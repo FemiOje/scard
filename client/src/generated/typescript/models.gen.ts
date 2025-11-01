@@ -39,10 +39,31 @@ export interface Position {
 	y: BigNumberish;
 }
 
+// Type definition for `scard::systems::game::contracts::game_systems::CombatEvent` struct
+export interface CombatEvent {
+	game_id: BigNumberish;
+	beast_type: BigNumberish;
+	player_damage_dealt: BigNumberish;
+	beast_damage_dealt: BigNumberish;
+	player_health_after: BigNumberish;
+	beast_defeated: boolean;
+	player_died: boolean;
+}
+
 // Type definition for `scard::systems::game::contracts::game_systems::EncounterGenerated` struct
 export interface EncounterGenerated {
 	game_id: BigNumberish;
 	encounter_type: BigNumberish;
+}
+
+// Type definition for `scard::systems::game::contracts::game_systems::FledEvent` struct
+export interface FledEvent {
+	game_id: BigNumberish;
+	beast_type: BigNumberish;
+	flee_successful: boolean;
+	player_damage_taken: BigNumberish;
+	player_health_after: BigNumberish;
+	player_died: boolean;
 }
 
 // Type definition for `scard::systems::game::contracts::game_systems::GameCreated` struct
@@ -85,7 +106,9 @@ export interface SchemaType extends ISchemaType {
 		GameState: GameState,
 		Player: Player,
 		Position: Position,
+		CombatEvent: CombatEvent,
 		EncounterGenerated: EncounterGenerated,
+		FledEvent: FledEvent,
 		GameCreated: GameCreated,
 		GameWon: GameWon,
 		Moved: Moved,
@@ -120,9 +143,26 @@ export const schema: SchemaType = {
 			x: 0,
 			y: 0,
 		},
+		CombatEvent: {
+			game_id: 0,
+			beast_type: 0,
+			player_damage_dealt: 0,
+			beast_damage_dealt: 0,
+			player_health_after: 0,
+			beast_defeated: false,
+			player_died: false,
+		},
 		EncounterGenerated: {
 			game_id: 0,
 			encounter_type: 0,
+		},
+		FledEvent: {
+			game_id: 0,
+			beast_type: 0,
+			flee_successful: false,
+			player_damage_taken: 0,
+			player_health_after: 0,
+			player_died: false,
 		},
 		GameCreated: {
 			game_id: 0,
@@ -154,7 +194,9 @@ export enum ModelsMapping {
 	Player = 'scard-Player',
 	Position = 'scard-Position',
 	Direction = 'scard-Direction',
+	CombatEvent = 'scard-CombatEvent',
 	EncounterGenerated = 'scard-EncounterGenerated',
+	FledEvent = 'scard-FledEvent',
 	GameCreated = 'scard-GameCreated',
 	GameWon = 'scard-GameWon',
 	Moved = 'scard-Moved',

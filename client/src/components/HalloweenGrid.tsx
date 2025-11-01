@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from "react";
 import "./HalloweenGrid.css";
 import { MoveConfirmationPopup } from "./MoveConfirmationPopup";
-import type { Position } from "../typescript/models.gen";
-import type { GameStatus } from "../hooks/useGameState";
+import { EncounterPopup } from "./EncounterPopup";
+import type { Position, GameStatus, EncounterState } from "../types/game";
 
 interface GridCellProps {
   index: number;
@@ -145,14 +145,22 @@ const GhostSVG: React.FC<{ className?: string }> = ({ className = "" }) => (
 interface HalloweenGridProps {
   playerPosition: Position | null;
   gameStatus: GameStatus;
+  encounter: EncounterState | null;
   onMove: (direction: "Left" | "Right" | "Up" | "Down") => Promise<void>;
+  onFight: () => Promise<void>;
+  onFlee: () => Promise<void>;
+  onClearEncounter: () => void;
   isLoading?: boolean;
 }
 
 export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
   playerPosition,
   gameStatus,
+  encounter,
   onMove,
+  onFight,
+  onFlee,
+  onClearEncounter,
   isLoading = false,
 }) => {
   const isGameWon = gameStatus === "Won";
@@ -219,8 +227,14 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
   };
 
   const handleCellClick = (index: number) => {
-    // Edge case: Disable clicks when game is won or loading
-    if (isGameWon || isLoading || !validMoves.has(index) || !playerGridPos) {
+    // Edge case: Disable clicks when game is won, loading, or encounter is active
+    if (
+      isGameWon ||
+      isLoading ||
+      encounter !== null ||
+      !validMoves.has(index) ||
+      !playerGridPos
+    ) {
       return;
     }
     setSelectedCell(index);
@@ -291,7 +305,7 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
               isPlayerPosition={isPlayerPos}
               isValidMove={isValidMove}
               isSelected={selectedCell === index}
-              isDisabled={isGameWon || isLoading}
+              isDisabled={isGameWon || isLoading || encounter !== null}
               onClick={() => handleCellClick(index)}
               onHover={setHoveredCell}
             />
@@ -333,6 +347,17 @@ export const HalloweenGrid: React.FC<HalloweenGridProps> = ({
           )}
           onConfirm={handleMoveConfirm}
           onCancel={handleMoveCancel}
+          isLoading={isLoading}
+        />
+      )}
+
+      {/* Encounter Popup - Must resolve before continuing */}
+      {encounter && (
+        <EncounterPopup
+          encounter={encounter}
+          onFight={onFight}
+          onFlee={onFlee}
+          onOK={onClearEncounter}
           isLoading={isLoading}
         />
       )}

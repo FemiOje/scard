@@ -3,15 +3,14 @@ import { createRoot } from "react-dom/client";
 
 import App from "./App.tsx";
 
-// Dojo related imports
 import { init } from "@dojoengine/sdk";
 import { DojoSdkProvider } from "@dojoengine/sdk/react";
-import type { SchemaType } from "./typescript/models.gen.ts";
-import { setupWorld } from "./typescript/contracts.gen.ts";
+import type { SchemaType } from "./generated/typescript/models.gen.ts";
+import { setupWorld } from "./generated/typescript/contracts.gen.ts";
 
 import "./index.css";
 import { dojoConfig } from "../dojoConfig.ts";
-import StarknetProvider from "./starknet-provider.tsx";
+import StarknetProvider from "./contexts/starknet.tsx";
 
 /**
  * Initializes and bootstraps the Dojo application.

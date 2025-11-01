@@ -18,10 +18,14 @@ function App() {
   const {
     playerPosition,
     gameStatus,
+    encounter,
     isLoading: isGameLoading,
     error: gameError,
     createGame,
     movePlayer,
+    fight,
+    flee,
+    clearEncounter,
   } = useGameState();
 
   const controllerConnector = useMemo(
@@ -159,7 +163,7 @@ function App() {
               }
             }}
           >
-            {isControllerReady ? "🔌 Connect Wallet" : "Loading..."}
+            {isControllerReady ? "Connect Wallet" : "Loading..."}
           </button>
         )}
       </header>
@@ -177,7 +181,11 @@ function App() {
         <HalloweenGrid
           playerPosition={playerPosition}
           gameStatus={gameStatus}
+          encounter={encounter}
           onMove={movePlayer}
+          onFight={fight}
+          onFlee={flee}
+          onClearEncounter={clearEncounter}
           isLoading={isGameLoading}
         />
       ) : (

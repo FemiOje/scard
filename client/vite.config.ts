@@ -24,7 +24,20 @@ export default defineConfig(() => {
   const plugins =
     sslKeyPath && sslCertPath
       ? [react(), wasm(), topLevelAwait()]
-      : [react(), wasm(), topLevelAwait(), mkcert()];
+      : [
+          react(),
+          wasm(),
+          topLevelAwait(),
+          mkcert({
+            hostnames: [
+              "localhost",
+              "127.0.0.1",
+              "::1",
+              "0.0.0.0",
+              // Add container hostname if known
+            ],
+          }),
+        ];
 
   return {
     plugins,
