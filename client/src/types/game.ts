@@ -49,7 +49,7 @@ export interface UseGameStateReturn {
   encounter: EncounterState | null;
   isLoading: boolean;
   error: string | null;
-  createGame: () => Promise<void>;
+  createGame: () => Promise<string>;
   movePlayer: (direction: Direction) => Promise<void>;
   fight: () => Promise<void>;
   flee: () => Promise<void>;

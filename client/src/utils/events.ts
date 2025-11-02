@@ -4,6 +4,7 @@
  * Parsed events from transaction receipt
  */
 export interface ParsedGameEvents {
+  gameId: string | null;
   position: { x: number; y: number } | null;
   encounterType: number | null;
 }
@@ -40,7 +41,7 @@ export function parseEventsFromReceipt(
   try {
     if (!receipt.events || !Array.isArray(receipt.events)) {
       console.warn("[Receipt] No events array in receipt");
-      return { position: null, encounterType: null };
+      return { gameId: null, position: null, encounterType: null };
     }
 
     // Filter events from World contract where keys[2] matches game_systems address
@@ -56,6 +57,7 @@ export function parseEventsFromReceipt(
 
     console.log("[Receipt] Game events found:", gameEvents.length);
 
+    let gameId: string | null = null;
     let position: { x: number; y: number } | null = null;
     let encounterType: number | null = null;
 
@@ -70,6 +72,13 @@ export function parseEventsFromReceipt(
       );
 
       if (evt.data && evt.data.length >= 2) {
+        // Try to parse game_id from GameCreated event
+        // GameCreated: { #[key] game_id: u64, player_health: u32, start_x: u32, start_y: u32 }
+        // In Dojo, #[key] fields are typically in the keys array
+        // For GameCreated event, game_id (u64) might be in keys[1] or split across keys
+        // For now, we'll rely on gameId being provided to create_game
+        // This extraction is for future-proofing when switching to embeddable standard
+        
         // Try to parse position from Moved/GameCreated events
         // Moved: data structure is [version, ..., x, y]
         // Position is typically at data[4] (x) and data[5] (y) based on existing code
@@ -107,10 +116,10 @@ export function parseEventsFromReceipt(
       }
     }
 
-    return { position, encounterType };
+    return { gameId, position, encounterType };
   } catch (error) {
     console.error("Error parsing events from receipt:", error);
-    return { position: null, encounterType: null };
+    return { gameId: null, position: null, encounterType: null };
   }
 }
 

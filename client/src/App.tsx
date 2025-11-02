@@ -1,39 +1,17 @@
 import { useAccount, useConnect } from "@starknet-react/core";
 import { useEffect, useState, useMemo } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ControllerConnector from "@cartridge/connector/controller";
-import { HalloweenGrid } from "./components/HalloweenGrid";
-import { SplashScreen } from "./components/SplashScreen";
-import { WinScreen } from "./components/WinScreen";
-import { LoadingScreen } from "./components/LoadingScreen";
 import { NotificationContainer } from "./components/NotificationToast";
-import { useGameState } from "./hooks/useGameState";
 import { useGameStore } from "./stores/gameStore";
-import { useGameDirector } from "./contexts/GameDirector";
+import { scardRoutes } from "./utils/routes";
 import "./styles/App.css";
 
-function App() {
+function AppContent() {
   const { address, status, connector } = useAccount();
   const { connect, connectors } = useConnect();
   const [username, setUsername] = useState<string | null>(null);
   const [isControllerReady, setIsControllerReady] = useState(false);
-  const [showGame, setShowGame] = useState(false);
-
-  // Game Director context - handles initialization and restoration
-  const { isInitializing, initializationError } = useGameDirector();
-
-  // Game state management
-  const {
-    playerPosition,
-    gameStatus,
-    encounter,
-    isLoading: isGameLoading,
-    error: gameError,
-    createGame,
-    movePlayer,
-    fight,
-    flee,
-    clearEncounter,
-  } = useGameState();
 
   const controllerConnector = useMemo(
     () => ControllerConnector.fromConnectors(connectors),
@@ -76,24 +54,9 @@ function App() {
     }
   }, [connector, status]);
 
-  // Auto-show game if it was restored (playerPosition exists)
-  // This happens when GameDirector successfully restores state from blockchain
-  useEffect(() => {
-    if (
-      address &&
-      !isInitializing &&
-      !initializationError &&
-      playerPosition &&
-      !showGame
-    ) {
-      console.log("[App] Game restored, showing game view");
-      setShowGame(true);
-    }
-  }, [address, isInitializing, initializationError, playerPosition, showGame]);
-
   return (
     <div style={{ minHeight: "100vh", position: "relative" }}>
-      {/* Header with Wallet Button */}
+      {/* Header with Wallet Button - Always visible on all pages */}
       <header
         style={{
           position: "fixed",
@@ -194,106 +157,31 @@ function App() {
         )}
       </header>
 
-      {/* Show Loading Screen during initialization */}
-      {isInitializing && (
-        <LoadingScreen message="Restoring game state from blockchain..." />
-      )}
+      {/* Route-based content */}
+      <Routes>
+        {scardRoutes.map((route, index) => (
+          <Route
+            key={index}
+            path={route.path}
+            element={route.content}
+          />
+        ))}
+      </Routes>
 
-      {/* Show Error Screen on initialization errors */}
-      {!isInitializing && initializationError && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "rgba(220, 53, 69, 0.95)",
-            color: "white",
-            padding: "2rem 3rem",
-            borderRadius: "12px",
-            zIndex: 10000,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-            textAlign: "center",
-            maxWidth: "500px",
-          }}
-        >
-          <h2 style={{ marginTop: 0, marginBottom: "1rem" }}>⚠️ Initialization Error</h2>
-          <p style={{ marginBottom: "2rem" }}>{initializationError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "0.75rem 1.5rem",
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              color: "white",
-              border: "2px solid white",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "1rem",
-              fontWeight: "bold",
-            }}
-          >
-            Reload Page
-          </button>
-        </div>
-      )}
-
-      {/* Show Splash Screen, Game, or Win Screen (only if not initializing and no errors) */}
-      {!isInitializing && !initializationError && gameStatus === "Won" && showGame ? (
-        <WinScreen
-          onPlayAgain={() => {
-            setShowGame(true); // Keep game view open, createGame will reset status
-          }}
-          onCreateGame={createGame}
-          isCreatingGame={isGameLoading}
-        />
-      ) : !isInitializing &&
-        !initializationError &&
-        showGame ? (
-        <HalloweenGrid
-          playerPosition={playerPosition}
-          gameStatus={gameStatus}
-          encounter={encounter}
-          onMove={movePlayer}
-          onFight={fight}
-          onFlee={flee}
-          onClearEncounter={clearEncounter}
-          isLoading={isGameLoading}
-        />
-      ) : !isInitializing && !initializationError ? (
-        <SplashScreen
-          onStartNewGame={() => setShowGame(true)}
-          onCreateGame={createGame}
-          isCreatingGame={isGameLoading}
-          hasExistingGame={!!(address && playerPosition)} // Game was restored
-        />
-      ) : null}
-
-      {/* Notification Toast Container */}
+      {/* Notification Toast Container - Always visible */}
       <NotificationContainer
         notifications={notifications}
         onDismiss={removeNotification}
       />
-
-      {/* Error display */}
-      {gameError && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "2rem",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(220, 53, 69, 0.9)",
-            color: "white",
-            padding: "1rem 2rem",
-            borderRadius: "8px",
-            zIndex: 1001,
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-          }}
-        >
-          ⚠️ Error: {gameError}
-        </div>
-      )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
   );
 }
 

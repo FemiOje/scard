@@ -12,7 +12,7 @@
  * - Coordinate between API layer and Zustand store
  */
 
-import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
+import { createContext, PropsWithChildren, useContext, useEffect, useState, useRef } from "react";
 import { useAccount } from "@starknet-react/core";
 import { useGameStore } from "../stores/gameStore";
 import { getGameState, checkGameExists, getGameEvents } from "../api/starknet";
@@ -34,6 +34,7 @@ const GameDirectorContext = createContext<GameDirectorContext>(
  */
 export function GameDirector({ children }: PropsWithChildren) {
   const { address } = useAccount();
+  const isInitializingRef = useRef(false);
 
   const {
     setGameId,
@@ -52,9 +53,27 @@ export function GameDirector({ children }: PropsWithChildren) {
   /**
    * Initialize or restore game state when wallet connects
    * This is the KEY function for persistence!
+   * 
+   * IMPORTANT: Don't run initialization if:
+   * - We're already initializing (prevent loops)
+   * - We're on /play page (let GameScreen handle it - check via window.location since we're outside Router)
    */
   useEffect(() => {
-    console.log("[GameDirector] useEffect triggered. Address:", address);
+    const currentPath = window.location.pathname;
+    console.log("[GameDirector] useEffect triggered. Address:", address, "Location:", currentPath);
+    
+    // Prevent infinite loops - don't run if already initializing
+    if (isInitializingRef.current) {
+      console.log("[GameDirector] Already initializing, skipping...");
+      return;
+    }
+    
+    // If on /play page, let GameScreen handle game ID from URL
+    // GameDirector should only initialize on splash screen
+    if (currentPath === "/play" || currentPath.startsWith("/play")) {
+      console.log("[GameDirector] On /play page, skipping initialization (GameScreen handles it)");
+      return;
+    }
     
     if (!address) {
       console.log("[GameDirector] No address, clearing state");
@@ -69,6 +88,13 @@ export function GameDirector({ children }: PropsWithChildren) {
     }
 
     const initialize = async () => {
+      // Prevent concurrent initialization
+      if (isInitializingRef.current) {
+        console.log("[GameDirector] Already initializing, skipping duplicate call");
+        return;
+      }
+      
+      isInitializingRef.current = true;
       console.log("[GameDirector] Starting initialization...");
       setIsInitializing(true);
       setInitializationError(null);
@@ -102,11 +128,13 @@ export function GameDirector({ children }: PropsWithChildren) {
         );
       } finally {
         setIsInitializing(false);
+        isInitializingRef.current = false;
         console.log("[GameDirector] Initialization complete");
       }
     };
 
     initialize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address]);
 
   /**

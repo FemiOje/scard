@@ -3,6 +3,7 @@ import "../styles/components/SplashScreen.css";
 
 interface SplashScreenProps {
   onStartNewGame: () => void;
+  onResumeGame?: () => void;
   onCreateGame: () => Promise<void>;
   isCreatingGame?: boolean;
   hasExistingGame?: boolean; // Indicates if game was restored from blockchain
@@ -10,6 +11,7 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onStartNewGame,
+  onResumeGame,
   onCreateGame,
   isCreatingGame = false,
   hasExistingGame = false,
@@ -20,8 +22,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
   };
 
   const handleResumeGame = () => {
-    // Game already restored by GameDirector, just show it
-    onStartNewGame();
+    // Game already restored by GameDirector, navigate to it
+    if (onResumeGame) {
+      onResumeGame();
+    } else {
+      // Fallback: use onStartNewGame
+      onStartNewGame();
+    }
   };
 
   return (
