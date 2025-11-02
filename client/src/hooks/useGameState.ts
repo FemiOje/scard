@@ -1,15 +1,15 @@
-import { useAccount } from "@starknet-react/core";
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import type {
   Direction,
   EncounterState,
   UseGameStateReturn,
   Position,
 } from "../types/game";
-import { getGameId, checkWinCondition, parseEncounterType } from "../utils/game";
+import { checkWinCondition, parseEncounterType } from "../utils/game";
 import { parseEventsFromReceipt } from "../utils/events";
 import { useGameStore } from "../stores/gameStore";
 import { useSystemCalls } from "../dojo/useSystemCalls";
+import { useGameDirector } from "../contexts/GameDirector";
 import {
   notifyGiftEncounter,
   notifyStatChange,
@@ -45,7 +45,7 @@ import { calculateCombatOutcome } from "../utils/combatCalculations";
  * ```
  */
 export function useGameState(): UseGameStateReturn {
-  const { address } = useAccount();
+  const { isInitializing } = useGameDirector();
 
   // Get state and actions from Zustand store
   const {
@@ -56,7 +56,6 @@ export function useGameState(): UseGameStateReturn {
     encounter,
     isLoading,
     error,
-    setGameId,
     setPlayerPosition,
     setPlayerStats,
     setGameStatus,
@@ -80,16 +79,8 @@ export function useGameState(): UseGameStateReturn {
     worldAddress,
   } = useSystemCalls();
 
-  useEffect(() => {
-    if (address) {
-      const id = getGameId(address);
-      setGameId(id);
-    } else {
-      setGameId(null);
-      setPlayerPosition(null);
-      setGameStatus("InProgress");
-    }
-  }, [address, setGameId, setPlayerPosition, setGameStatus]);
+  // NOTE: gameId initialization is now handled by GameDirector
+  // No need to set gameId here - GameDirector sets it on wallet connect
 
   // Create new game
   const createGame = useCallback(async () => {
@@ -650,7 +641,7 @@ export function useGameState(): UseGameStateReturn {
     playerStats,
     gameStatus,
     encounter,
-    isLoading,
+    isLoading: isLoading || isInitializing,
     error,
     createGame,
     movePlayer,

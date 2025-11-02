@@ -11,6 +11,7 @@ import { setupWorld } from "./generated/typescript/contracts.gen.ts";
 import "./styles/index.css";
 import { dojoConfig } from "../dojoConfig.ts";
 import StarknetProvider from "./contexts/starknet.tsx";
+import { GameDirector } from "./contexts/GameDirector.tsx";
 
 /**
  * Initializes and bootstraps the Dojo application.
@@ -40,7 +41,9 @@ async function main() {
                 clientFn={setupWorld}
             >
                 <StarknetProvider>
-                    <App />
+                    <GameDirector>
+                        <App />
+                    </GameDirector>
                 </StarknetProvider>
             </DojoSdkProvider>
         </StrictMode>

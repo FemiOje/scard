@@ -1,3 +1,5 @@
+use super::{BeastEncounter, CurrentEncounter, Player, Position};
+
 #[derive(Serde, Copy, Drop, PartialEq, Debug)]
 pub enum GameStatus {
     InProgress,
@@ -72,6 +74,18 @@ impl U8IntoGameStatus of Into<u8, GameStatus> {
             GameStatus::InProgress
         }
     }
+}
+
+/// Complete game state returned by get_game_state view function
+/// Packages all game data for efficient frontend retrieval
+#[derive(Copy, Drop, Serde, Debug)]
+pub struct CompleteGameState {
+    pub player: Player,
+    pub position: Position,
+    pub game_state: GameState,
+    pub current_encounter: CurrentEncounter,
+    pub beast_encounter: BeastEncounter,
+    pub has_beast: bool // Flag to indicate if beast_encounter is valid
 }
 
 #[cfg(test)]

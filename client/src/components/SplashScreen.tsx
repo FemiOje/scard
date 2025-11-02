@@ -5,17 +5,25 @@ interface SplashScreenProps {
   onStartNewGame: () => void;
   onCreateGame: () => Promise<void>;
   isCreatingGame?: boolean;
+  hasExistingGame?: boolean; // Indicates if game was restored from blockchain
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({
   onStartNewGame,
   onCreateGame,
   isCreatingGame = false,
+  hasExistingGame = false,
 }) => {
   const handleStartNewGame = async () => {
     await onCreateGame();
     onStartNewGame();
   };
+
+  const handleResumeGame = () => {
+    // Game already restored by GameDirector, just show it
+    onStartNewGame();
+  };
+
   return (
     <div className="splash-screen">
       {/* Background decorations */}
@@ -34,22 +42,48 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
       {/* Buttons */}
       <div className="splash-buttons">
-        <button
-          onClick={handleStartNewGame}
-          disabled={isCreatingGame}
-          className="splash-button splash-button-primary"
-        >
-          <span className="button-icon">🎮</span>
-          <span>{isCreatingGame ? "Creating Game..." : "Start New Game"}</span>
-        </button>
-        <button
-          disabled
-          className="splash-button splash-button-secondary"
-          title="Coming soon"
-        >
-          <span className="button-icon">📜</span>
-          <span>Resume Game</span>
-        </button>
+        {hasExistingGame ? (
+          // Game restored - show Resume button as primary
+          <>
+            <button
+              onClick={handleResumeGame}
+              className="splash-button splash-button-primary"
+            >
+              <span className="button-icon">📜</span>
+              <span>Resume Game</span>
+            </button>
+            <button
+              onClick={handleStartNewGame}
+              disabled={isCreatingGame}
+              className="splash-button splash-button-secondary"
+            >
+              <span className="button-icon">🎮</span>
+              <span>
+                {isCreatingGame ? "Creating Game..." : "Start New Game"}
+              </span>
+            </button>
+          </>
+        ) : (
+          // No existing game - show Start New Game button
+          <>
+            <button
+              onClick={handleStartNewGame}
+              disabled={isCreatingGame}
+              className="splash-button splash-button-primary"
+            >
+              <span className="button-icon">🎮</span>
+              <span>{isCreatingGame ? "Creating Game..." : "Start New Game"}</span>
+            </button>
+            <button
+              disabled
+              className="splash-button splash-button-secondary"
+              title="No saved game found"
+            >
+              <span className="button-icon">📜</span>
+              <span>Resume Game</span>
+            </button>
+          </>
+        )}
       </div>
 
       {/* Decorative elements */}

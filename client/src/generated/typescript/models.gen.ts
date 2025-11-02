@@ -89,6 +89,16 @@ export interface Moved {
 	new_y: BigNumberish;
 }
 
+// Type definition for `scard::models::game_state::CompleteGameState` struct
+export interface CompleteGameState {
+	player: Player;
+	position: Position;
+	game_state: GameState;
+	current_encounter: CurrentEncounter;
+	beast_encounter: BeastEncounter;
+	has_beast: boolean;
+}
+
 // Type definition for `scard::models::position::Direction` enum
 export const direction = [
 	'Left',
@@ -112,6 +122,7 @@ export interface SchemaType extends ISchemaType {
 		GameCreated: GameCreated,
 		GameWon: GameWon,
 		Moved: Moved,
+		CompleteGameState: CompleteGameState,
 	},
 }
 export const schema: SchemaType = {
@@ -185,6 +196,14 @@ export const schema: SchemaType = {
 			new_x: 0,
 			new_y: 0,
 		},
+		CompleteGameState: {
+		player: { game_id: 0, health: 0, damage_points: 0, attack_points: 0, has_free_flee: false, has_free_attack: false, },
+		position: { game_id: 0, x: 0, y: 0, },
+		game_state: { game_id: 0, status: 0, },
+		current_encounter: { game_id: 0, encounter_type: 0, },
+		beast_encounter: { game_id: 0, beast_type: 0, attack_points: 0, damage_points: 0, },
+			has_beast: false,
+		},
 	},
 };
 export enum ModelsMapping {
@@ -200,4 +219,5 @@ export enum ModelsMapping {
 	GameCreated = 'scard-GameCreated',
 	GameWon = 'scard-GameWon',
 	Moved = 'scard-Moved',
+	CompleteGameState = 'scard-CompleteGameState',
 }

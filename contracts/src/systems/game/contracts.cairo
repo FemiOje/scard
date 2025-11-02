@@ -1,4 +1,4 @@
-use scard::models::{Direction, Position};
+use scard::models::{CompleteGameState, Direction, Position};
 
 #[starknet::interface]
 pub trait IGameSystems<T> {
@@ -7,6 +7,8 @@ pub trait IGameSystems<T> {
     fn fight(ref self: T, game_id: u64);
     fn flee(ref self: T, game_id: u64);
     fn get_position(self: @T, game_id: u64) -> Position;
+    fn get_game_state(self: @T, game_id: u64) -> CompleteGameState;
+    fn game_exists(self: @T, game_id: u64) -> bool;
 }
 
 #[dojo::contract]
@@ -21,8 +23,9 @@ mod game_systems {
         select_encounter_from_hash,
     };
     use scard::models::{
-        Beast, BeastEncounter, BeastEncounterTrait, CurrentEncounterTrait, Direction, Encounter,
-        GameStateTrait, Player, PlayerTrait, Position, PositionTrait,
+        Beast, BeastEncounter, BeastEncounterTrait, CompleteGameState, CurrentEncounter,
+        CurrentEncounterTrait, Direction, Encounter, GameState, GameStateTrait, Player, PlayerTrait,
+        Position, PositionTrait,
     };
 
     // ------------------------------------------ //
@@ -395,6 +398,31 @@ mod game_systems {
         fn get_position(self: @ContractState, game_id: u64) -> Position {
             let world = self.world(@DEFAULT_NS());
             world.read_model(game_id)
+        }
+
+        fn get_game_state(self: @ContractState, game_id: u64) -> CompleteGameState {
+            let world = self.world(@DEFAULT_NS());
+
+            // Read all models for this game
+            let player: Player = world.read_model(game_id);
+            let position: Position = world.read_model(game_id);
+            let game_state: GameState = world.read_model(game_id);
+            let current_encounter: CurrentEncounter = world.read_model(game_id);
+            let beast_encounter: BeastEncounter = world.read_model(game_id);
+
+            // Check if in beast encounter (has_beast flag)
+            let has_beast = current_encounter.is_beast_encounter();
+
+            CompleteGameState {
+                player, position, game_state, current_encounter, beast_encounter, has_beast,
+            }
+        }
+
+        fn game_exists(self: @ContractState, game_id: u64) -> bool {
+            let world = self.world(@DEFAULT_NS());
+            let player: Player = world.read_model(game_id);
+
+            player.health > 0
         }
     }
 }

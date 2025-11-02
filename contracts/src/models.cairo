@@ -5,7 +5,7 @@ pub mod player;
 pub mod position;
 pub use beast::{Beast, BeastEncounter, BeastEncounterTrait};
 pub use encounter::{CurrentEncounter, CurrentEncounterTrait, Encounter};
-pub use game_state::{GameState, GameStateTrait, GameStatus};
+pub use game_state::{CompleteGameState, GameState, GameStateTrait, GameStatus};
 
 // Re-export commonly used types for convenience
 pub use player::{Player, PlayerTrait};
