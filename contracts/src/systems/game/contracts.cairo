@@ -15,6 +15,9 @@ pub trait IGameSystems<T> {
 mod game_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
+    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use game_components_minigame::interface::{IMinigameDispatcher, IMinigameDispatcherTrait};
+    use game_components_minigame::libs::{assert_token_ownership, post_action, pre_action};
     use scard::constants::{
         DEFAULT_NS, DEFAULT_PLAYER_ATTACK, DEFAULT_PLAYER_DAMAGE, DEFAULT_PLAYER_HEALTH,
     };
@@ -27,6 +30,7 @@ mod game_systems {
         CurrentEncounterTrait, Direction, Encounter, GameState, GameStateTrait, Player, PlayerTrait,
         Position, PositionTrait,
     };
+    use starknet::ContractAddress;
 
     // ------------------------------------------ //
     // ---------------- Events ------------------ //
@@ -95,6 +99,21 @@ mod game_systems {
     }
 
     // ------------------------------------------ //
+    // ------------ Helper Functions ------------ //
+    // ------------------------------------------ //
+
+    /// Get the token contract address from game_token_systems
+    /// @param world The world storage
+    /// @return The address of the ERC721 token contract
+    fn _get_token_address(world: WorldStorage) -> ContractAddress {
+        let (game_token_systems_address, _) = world.dns(@"game_token_systems").unwrap();
+        let minigame_dispatcher = IMinigameDispatcher {
+            contract_address: game_token_systems_address,
+        };
+        minigame_dispatcher.token_address()
+    }
+
+    // ------------------------------------------ //
     // ------------ External Functions ---------- //
     // ------------------------------------------ //
 
@@ -102,6 +121,11 @@ mod game_systems {
     impl GameSystemsImpl of super::IGameSystems<ContractState> {
         fn create_game(ref self: ContractState, game_id: u64) {
             let mut world = self.world(@DEFAULT_NS());
+
+            // Validate token ownership (must own the minted token)
+            let token_address = _get_token_address(world);
+            assert_token_ownership(token_address, game_id);
+            pre_action(token_address, game_id);
 
             // Initialize player with default stats
             let player = PlayerTrait::new(
@@ -131,10 +155,18 @@ mod game_systems {
                         start_y: position.y,
                     },
                 );
+
+            // Post-action hook
+            post_action(token_address, game_id);
         }
 
         fn move(ref self: ContractState, game_id: u64, direction: Direction) {
             let mut world = self.world(@DEFAULT_NS());
+
+            // Validate token ownership
+            let token_address = _get_token_address(world);
+            assert_token_ownership(token_address, game_id);
+            pre_action(token_address, game_id);
 
             // Check if game is already won or lost - don't allow movement
             let mut game_state: scard::models::GameState = world.read_model(game_id);
@@ -215,10 +247,19 @@ mod game_systems {
                         @EncounterGenerated { game_id, encounter_type: encounter_type.into() },
                     );
             }
+
+            // Post-action hook
+            post_action(token_address, game_id);
         }
 
         fn fight(ref self: ContractState, game_id: u64) {
             let mut world = self.world(@DEFAULT_NS());
+
+            // Validate token ownership
+            let token_address = _get_token_address(world);
+            assert_token_ownership(token_address, game_id);
+            pre_action(token_address, game_id);
+
             // Validate game is in progress
             let mut game_state: scard::models::GameState = world.read_model(game_id);
             assert(game_state.is_in_progress(), 'game is not in progress');
@@ -297,10 +338,18 @@ mod game_systems {
                         player_died,
                     },
                 );
+
+            // Post-action hook
+            post_action(token_address, game_id);
         }
 
         fn flee(ref self: ContractState, game_id: u64) {
             let mut world = self.world(@DEFAULT_NS());
+
+            // Validate token ownership
+            let token_address = _get_token_address(world);
+            assert_token_ownership(token_address, game_id);
+            pre_action(token_address, game_id);
 
             // ------------------------------------------ //
             // ---------------- Validation -------------- //
@@ -393,6 +442,9 @@ mod game_systems {
                         player_died,
                     },
                 );
+
+            // Post-action hook
+            post_action(token_address, game_id);
         }
 
         fn get_position(self: @ContractState, game_id: u64) -> Position {

@@ -17,6 +17,7 @@ import {
 import { buildBeastQuery, buildCurrentEncounterQuery, buildPlayerQuery } from "../utils/queries";
 import type { Direction, BeastEncounter } from "../types/game";
 import type { Player } from "../generated/typescript/models.gen";
+import { CairoOption, CairoOptionVariant, CallData, shortString } from "starknet";
 
 /**
  * Delay helper function
@@ -64,6 +65,18 @@ export function useSystemCalls() {
     }
   })();
 
+  const gameTokenAddress: string | undefined = (() => {
+    try {
+      return getContractByName(
+        dojoConfig.manifest as any,
+        "scard",
+        "game_token_systems"
+      )?.address;
+    } catch {
+      return undefined;
+    }
+  })();
+
   const worldAddress: string | undefined = dojoConfig?.manifest?.world?.address;
 
   /**
@@ -101,8 +114,67 @@ export function useSystemCalls() {
   };
 
   /**
+   * Mint game token from Denshokan (game_token_systems)
+   * Following death-mountain pattern for embeddable game standard
+   * @param name - Player name (optional)
+   * @param settingsId - Settings ID (optional, defaults to 0)
+   * @returns Token ID as number
+   */
+  const mintGame = async (name: string = "", settingsId: number = 0): Promise<number> => {
+    if (!account || !gameTokenAddress) {
+      throw new Error("Account or game token address not initialized");
+    }
+
+    // Helper to convert string to felt (using shortString from starknet)
+    const stringToFelt = (v: string): string => 
+      v ? shortString.encodeShortString(v) : "0x0";
+
+    try {
+      const tx = await account.execute([
+        {
+          contractAddress: gameTokenAddress,
+          entrypoint: "mint_game",
+          calldata: CallData.compile([
+            new CairoOption(CairoOptionVariant.Some, stringToFelt(name)),
+            new CairoOption(CairoOptionVariant.Some, settingsId),
+            1, // start
+            1, // end
+            1, // objective_ids
+            1, // context
+            1, // client_url
+            1, // renderer_address
+            account.address,
+            false, // soulbound
+          ]),
+        },
+      ]);
+
+      console.log("[System Call] MintGame transaction hash:", tx.transaction_hash);
+
+      const receipt: any = await waitForTransaction(tx.transaction_hash);
+
+      // Extract token_id from transaction receipt events
+      // TokenMetadata event has 14 fields, token_id is at index 1
+      const tokenMetadataEvent = receipt.events.find(
+        (event: any) => event.data.length === 14
+      );
+
+      if (!tokenMetadataEvent) {
+        throw new Error("TokenMetadata event not found in receipt");
+      }
+
+      const tokenId = parseInt(tokenMetadataEvent.data[1], 16);
+      console.log("[System Call] ✅ Minted game token:", tokenId);
+      return tokenId;
+    } catch (error) {
+      console.error("[System Call] Error minting game:", error);
+      throw error;
+    }
+  };
+
+  /**
    * Create new game system call
-   * @param gameId - Game ID to create
+   * @param gameId - Game ID (token_id from mint) to create
    * @returns Transaction receipt
    */
   const dojoCreateGame = async (gameId: string): Promise<any> => {
@@ -430,6 +502,7 @@ export function useSystemCalls() {
 
   return {
     // System calls
+    mintGame,
     dojoCreateGame,
     dojoMove,
     dojoFight,
@@ -440,6 +513,7 @@ export function useSystemCalls() {
     fetchPlayerStats,
     // Contract addresses (for event parsing)
     gameSystemsAddress,
+    gameTokenAddress,
     worldAddress,
   };
 }

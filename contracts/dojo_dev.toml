@@ -24,7 +24,17 @@ private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
 world_address = "0x0626a357a9e415e7f16f3ef0bdd406a2536323462e328d3e4604cef106434216"
 
 [writers]
-"scard" = ["scard-actions"]
+"scard" = ["scard-game_systems", "scard-game_token_systems"]
+
+[migration]
+order_inits = ["scard-game_systems", "scard-game_token_systems"]
+
+[init_call_args]
+"scard-game_token_systems" = [
+    "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",  # creator account address (katana default)
+    "0x02334dc9c950c74c3228e2a343d495ae36f0b4edf06767a679569e9f9de08776", # denshokan address (sepolia)
+    "1",                                                                  # Option::None for renderer address
+]
 
 [server]
 http_cors_origins = ["*"]

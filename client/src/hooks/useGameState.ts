@@ -68,7 +68,6 @@ export function useGameState(): UseGameStateReturn {
 
   // Get Dojo system calls
   const {
-    dojoCreateGame,
     dojoMove,
     dojoFight,
     dojoFlee,
@@ -78,90 +77,6 @@ export function useGameState(): UseGameStateReturn {
     gameSystemsAddress,
     worldAddress,
   } = useSystemCalls();
-
-  // NOTE: gameId initialization is now handled by GameDirector
-  // No need to set gameId here - GameDirector sets it on wallet connect
-
-  // Create new game
-  // Returns game_id (from event if available, otherwise from store)
-  // Matching death-mountain pattern where mintGame returns tokenId
-  const createGame = useCallback(async (): Promise<string> => {
-    if (!gameId || !gameSystemsAddress || !worldAddress) {
-      setError("Game ID or contract addresses not available");
-      throw new Error("Game ID or contract addresses not available");
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Call Dojo system
-      const receipt = await dojoCreateGame(gameId);
-
-      // Parse events from receipt
-      const { gameId: eventGameId, position } = parseEventsFromReceipt(
-        receipt,
-        gameSystemsAddress,
-        worldAddress
-      );
-
-      // Use game_id from event if available, otherwise use gameId from store
-      // For embeddable standard future: eventGameId will be tokenId from mint
-      const createdGameId = eventGameId || gameId;
-
-      const finalPosition = position || { x: 0, y: 0 };
-      if (!position) {
-        // Fallback: assume initial position is (0, 0)
-        console.warn("[Create Game] Could not parse position, using (0,0)");
-      }
-
-      setPlayerPosition({
-        game_id: createdGameId,
-        x: finalPosition.x,
-        y: finalPosition.y,
-      } as unknown as Position);
-
-      // Reset game status to InProgress when creating new game
-      setGameStatus("InProgress");
-      // Clear any encounter state
-      setEncounter(null);
-
-      // Fetch player stats after game creation
-      if (createdGameId) {
-        fetchPlayerStats(createdGameId)
-          .then((stats) => {
-            if (stats) {
-              setPlayerStats(stats);
-            }
-          })
-          .catch((error) => {
-            console.warn("[Create Game] Failed to fetch player stats:", error);
-          });
-      }
-
-      // Return game_id (matching death-mountain pattern)
-      return createdGameId;
-    } catch (err) {
-      console.error("Error creating game:", err);
-      const errorMessage = err instanceof Error ? err.message : "Failed to create game";
-      setError(errorMessage);
-      throw err; // Re-throw so components can handle
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    gameId,
-    gameSystemsAddress,
-    worldAddress,
-    dojoCreateGame,
-    fetchPlayerStats,
-    setPlayerPosition,
-    setPlayerStats,
-    setGameStatus,
-    setEncounter,
-    setIsLoading,
-    setError,
-  ]);
 
   // Move player
   const movePlayer = useCallback(
@@ -654,7 +569,6 @@ export function useGameState(): UseGameStateReturn {
     encounter,
     isLoading: isLoading || isInitializing,
     error,
-    createGame,
     movePlayer,
     fight,
     flee,

@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAccount } from "@starknet-react/core";
 import { HalloweenGrid } from "./HalloweenGrid";
@@ -7,6 +7,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import { useGameState } from "../hooks/useGameState";
 import { useGameDirector } from "../contexts/GameDirector";
 import { useGameStore } from "../stores/gameStore";
+import { useSystemCalls } from "../dojo/useSystemCalls";
 
 /**
  * GameScreen - Main game page component
@@ -21,9 +22,7 @@ export const GameScreen: React.FC = () => {
   
   const { isInitializing, initializationError } = useGameDirector();
   const { gameId: currentGameId, setGameId } = useGameStore();
-  const hasSetGameIdRef = useRef(false);
-  const lastGameIdRef = useRef<string | null>(null);
-  const lastUrlGameIdRef = useRef<string | null>(null);
+  const [isMinting, setIsMinting] = useState(false);
   
   const {
     playerPosition,
@@ -31,12 +30,13 @@ export const GameScreen: React.FC = () => {
     encounter,
     isLoading: isGameLoading,
     error: gameError,
-    createGame,
     movePlayer,
     fight,
     flee,
     clearEncounter,
   } = useGameState();
+  
+  const { mintGame, gameTokenAddress } = useSystemCalls();
 
   // Redirect to home if not connected
   useEffect(() => {
@@ -45,58 +45,49 @@ export const GameScreen: React.FC = () => {
     }
   }, [address, navigate]);
 
-  // Create game and navigate (matching death-mountain's mint function)
+  // Mint game token and navigate immediately (matching death-mountain's mint function)
   const mint = useCallback(async () => {
-    try {
-      const newGameId = await createGame();
-      // Navigate to /play?id={newGameId} matching death-mountain pattern
-      navigate(`/play?id=${newGameId}`, { replace: true });
-    } catch (error) {
-      console.error("Failed to create game:", error);
-      // Stay on /play, show error
+    if (isMinting) {
+      console.log("[GameScreen] Already minting, skipping duplicate call");
+      return;
     }
-  }, [createGame, navigate]);
+
+    if (!address || !gameTokenAddress) {
+      console.log("[GameScreen] Account or gameTokenAddress not ready, skipping mint");
+      return;
+    }
+
+    if (game_id || currentGameId) {
+      return;
+    }
+
+    setIsMinting(true);
+    try {
+      const tokenId = await mintGame("", 0);
+      console.log("[GameScreen] ✅ Minted token, navigating to /play?id=" + tokenId);
+      navigate(`/play?id=${tokenId}`, { replace: true });
+    } catch (error) {
+      console.error("Failed to mint game:", error);
+      setIsMinting(false);
+    }
+  }, [isMinting, address, gameTokenAddress, game_id, currentGameId, mintGame, navigate]);
 
   // Handle game ID from URL - matching death-mountain pattern
-  // Only set gameId if it's different from current value to prevent infinite loops
   useEffect(() => {
-    if (!address || isInitializing) return;
-    
-    const parsedGameId = game_id ? Number(game_id) : 0;
-    const gameIdString = parsedGameId && !isNaN(parsedGameId) && parsedGameId > 0 
-      ? String(parsedGameId) 
-      : null;
-    
-    // Reset refs when URL param changes
-    if (game_id !== lastUrlGameIdRef.current) {
-      lastUrlGameIdRef.current = game_id;
-      hasSetGameIdRef.current = false;
+    if (!address || isInitializing) {
+      return;
     }
-    
-    // Prevent infinite loops: only set if gameId is different from current
-    if (gameIdString) {
-      // Only update if it's actually different from current store value
-      if (gameIdString !== currentGameId && !hasSetGameIdRef.current) {
-        lastGameIdRef.current = gameIdString;
-        setGameId(gameIdString);
-        hasSetGameIdRef.current = true;
-      } else {
-        // Already set correctly, do nothing
-        if (gameIdString === currentGameId) {
-          hasSetGameIdRef.current = true;
-        }
+
+    if (game_id) {
+      if (game_id !== currentGameId) {
+        setGameId(game_id);
       }
-    } else if (!gameIdString && (parsedGameId === 0 || !game_id)) {
-      // No ID provided, create new game (matching death-mountain's mint flow)
-      // Only call mint once per URL change
-      if (!hasSetGameIdRef.current) {
-        hasSetGameIdRef.current = true;
-        mint();
-      }
+      setIsMinting(false);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // Note: currentGameId is intentionally NOT in deps - we only want to respond to URL changes
-  }, [address, game_id, isInitializing]);
+
+    mint();
+  }, [address, isInitializing, game_id, currentGameId, setGameId, mint]);
 
   // Handle exit to home
   const handleExitGame = () => {
@@ -198,9 +189,13 @@ export const GameScreen: React.FC = () => {
       <WinScreen
         onPlayAgain={() => navigate("/play")}
         onCreateGame={async () => {
-          // Wrap createGame to match WinScreen's expected signature
-          const newGameId = await createGame();
-          navigate(`/play?id=${newGameId}`);
+          // Mint new game token and navigate (matching death-mountain pattern)
+          try {
+            const tokenId = await mintGame("", 0);
+            navigate(`/play?id=${tokenId}`, { replace: true });
+          } catch (error) {
+            console.error("Failed to mint game:", error);
+          }
         }}
         isCreatingGame={isGameLoading}
       />

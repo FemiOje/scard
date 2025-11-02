@@ -43,7 +43,7 @@ get_contract_address () {
 }
 
 export GAME_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_systems")
-# export GAME_TOKEN_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_token_systems")
+export GAME_TOKEN_SYSTEM_ADDRESS=$(get_contract_address "${SCARD_NAMESPACE}-game_token_systems")
 
 echo "GAME SYSTEMS ADDRESS: $GAME_SYSTEM_ADDRESS"
-# echo "GAME TOKEN SYSTEM ADDRESS: $GAME_TOKEN_SYSTEM_ADDRESS"
+echo "GAME TOKEN SYSTEM ADDRESS: $GAME_TOKEN_SYSTEM_ADDRESS"

@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "@starknet-react/core";
 import { SplashScreen } from "./SplashScreen";
-import { useGameState } from "../hooks/useGameState";
 import { useGameStore } from "../stores/gameStore";
+import { useSystemCalls } from "../dojo/useSystemCalls";
 
 /**
  * SplashScreenWrapper - Wrapper component for routing
@@ -12,7 +12,7 @@ import { useGameStore } from "../stores/gameStore";
 export const SplashScreenWrapper: React.FC = () => {
   const navigate = useNavigate();
   const { address } = useAccount();
-  const { createGame } = useGameState();
+  const { mintGame } = useSystemCalls();
   const { playerPosition, gameId } = useGameStore();
   const [isCreatingGame, setIsCreatingGame] = useState(false);
 
@@ -43,12 +43,11 @@ export const SplashScreenWrapper: React.FC = () => {
 
     setIsCreatingGame(true);
     try {
-      // createGame now returns game_id (matching death-mountain pattern)
-      const newGameId = await createGame();
-      // Navigate to /play?id={newGameId} matching death-mountain pattern
-      navigate(`/play?id=${newGameId}`);
+      // Mint new game token and navigate immediately (matching death-mountain pattern)
+      const tokenId = await mintGame("", 0);
+      navigate(`/play?id=${tokenId}`, { replace: true });
     } catch (error) {
-      console.error("Failed to create game:", error);
+      console.error("Failed to mint game:", error);
     } finally {
       setIsCreatingGame(false);
     }

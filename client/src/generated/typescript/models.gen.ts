@@ -1,6 +1,6 @@
 import type { SchemaType as ISchemaType } from "@dojoengine/sdk";
 
-import { CairoCustomEnum, BigNumberish } from 'starknet';
+import { CairoCustomEnum, CairoOption, CairoOptionVariant, BigNumberish } from 'starknet';
 
 // Type definition for `scard::models::beast::BeastEncounter` struct
 export interface BeastEncounter {
@@ -89,6 +89,20 @@ export interface Moved {
 	new_y: BigNumberish;
 }
 
+// Type definition for `game_components_metagame::extensions::context::structs::GameContext` struct
+export interface GameContext {
+	name: string;
+	value: string;
+}
+
+// Type definition for `game_components_metagame::extensions::context::structs::GameContextDetails` struct
+export interface GameContextDetails {
+	name: string;
+	description: string;
+	id: CairoOption<BigNumberish>;
+	context: Array<GameContext>;
+}
+
 // Type definition for `scard::models::game_state::CompleteGameState` struct
 export interface CompleteGameState {
 	player: Player;
@@ -122,6 +136,8 @@ export interface SchemaType extends ISchemaType {
 		GameCreated: GameCreated,
 		GameWon: GameWon,
 		Moved: Moved,
+		GameContext: GameContext,
+		GameContextDetails: GameContextDetails,
 		CompleteGameState: CompleteGameState,
 	},
 }
@@ -196,6 +212,16 @@ export const schema: SchemaType = {
 			new_x: 0,
 			new_y: 0,
 		},
+		GameContext: {
+		name: "",
+		value: "",
+		},
+		GameContextDetails: {
+		name: "",
+		description: "",
+			id: new CairoOption(CairoOptionVariant.None),
+			context: [{ name: "", value: "", }],
+		},
 		CompleteGameState: {
 		player: { game_id: 0, health: 0, damage_points: 0, attack_points: 0, has_free_flee: false, has_free_attack: false, },
 		position: { game_id: 0, x: 0, y: 0, },
@@ -219,5 +245,7 @@ export enum ModelsMapping {
 	GameCreated = 'scard-GameCreated',
 	GameWon = 'scard-GameWon',
 	Moved = 'scard-Moved',
+	GameContext = 'game_components_metagame-GameContext',
+	GameContextDetails = 'game_components_metagame-GameContextDetails',
 	CompleteGameState = 'scard-CompleteGameState',
 }

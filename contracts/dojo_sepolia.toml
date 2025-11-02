@@ -4,7 +4,7 @@ description = "Scar'd"
 cover_uri = "file://assets/cover.png"
 icon_uri = "file://assets/icon.png"
 website = "https://github.com/scard"
-seed = "scard1"
+seed = "scard-sepolia"
 
 [namespace]
 default = "scard"
@@ -13,25 +13,17 @@ default = "scard"
 rpc_url = "https://api.cartridge.gg/x/starknet/sepolia"
 account_address = "0x05ef6460b5165a94bc342a57825058c039e6f6c17e3c2daf6350e30cc58c8bd6"
 keystore_path = "deployments/keystore.json"
-world_address = "0x066e4d35596f894f2fff6884bf28bd4509a391eb31060176eedb9e5283cd8142"
+world_address = "0x0379b60e4b9bf04c0429c4830c6e1fd9f2ea0acf74cbe8583043e6f9f0db8607"
 
 [writers]
-"scard" = [
-    "scard-game_systems", 
-    # "scard-renderer_systems",
-    # "scard-game_token_systems"
-]
+"scard" = ["scard-game_systems", "scard-game_token_systems"]
 
 [migration]
-# order_inits = [
-#     "scard-game_systems",
-#     "scard-renderer_systems",
-#     "scard-game_token_systems"
-# ]
+order_inits = ["scard-game_token_systems"]
 
 [init_call_args]
 "scard-game_token_systems" = [
-    "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764", # creator account address - jinius controller
+    "0x02CA2BAE77044D5646F0fc7Aaa0eDb75BDfA17a5F62635E8fddf930B26D4E764", # creator account address
     "0x02334dc9c950c74c3228e2a343d495ae36f0b4edf06767a679569e9f9de08776", # denshokan address
-    "1" # Option::None for renderer address
+    "1",                                                                  # Option::None for renderer address
 ]
