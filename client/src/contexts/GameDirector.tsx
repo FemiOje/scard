@@ -47,7 +47,7 @@ export function GameDirector({ children }: PropsWithChildren) {
     clearEncounter,
   } = useGameStore();
 
-  const { dojoCreateGame } = useSystemCalls();
+  const { dojoCreateGame, fetchPlayerStats } = useSystemCalls();
 
   const [isInitializing, setIsInitializing] = useState(false);
   const [initializationError, setInitializationError] = useState<string | null>(
@@ -245,7 +245,47 @@ export function GameDirector({ children }: PropsWithChildren) {
         } else {
           console.log("[GameDirector] Game does not exist, creating new game", gameId);
           await createNewGame(gameId);
-          await restoreGameState(gameId);
+          
+          // Wait for transaction to be indexed before fetching state
+          // Use fetchPlayerStats which has retry logic built in
+          console.log("[GameDirector] Waiting for game to be indexed, then fetching stats...");
+          
+          // Try fetching player stats with retry logic (this will retry until stats are available)
+          // This ensures the game is indexed and stats are available before we try to restore state
+          const playerStats = await fetchPlayerStats(gameId);
+          if (playerStats) {
+            // Set player stats immediately if available
+            setPlayerStats(playerStats);
+          }
+          
+          // Add a small delay to ensure getGameState can also retrieve the state
+          // (getGameState might need a moment after the SDK query succeeds)
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          
+          // Restore complete game state (this will also set position, encounter, etc.)
+          // Try restoreGameState with retry logic in case getGameState fails
+          let retryCount = 0;
+          const maxRetries = 3;
+          while (retryCount < maxRetries) {
+            try {
+              await restoreGameState(gameId);
+              break; // Success, exit retry loop
+            } catch (error) {
+              retryCount++;
+              if (retryCount < maxRetries) {
+                console.log(
+                  `[GameDirector] restoreGameState failed, retrying (${retryCount}/${maxRetries})...`,
+                  error
+                );
+                await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+              } else {
+                // Last retry failed, but we already have player stats, so continue
+                console.warn(
+                  "[GameDirector] restoreGameState failed after retries, but player stats are set"
+                );
+              }
+            }
+          }
         }
 
         lastInitializedGameIdRef.current = gameId;
@@ -261,7 +301,7 @@ export function GameDirector({ children }: PropsWithChildren) {
     };
 
     initializeGame();
-  }, [address, gameId, createNewGame, restoreGameState, checkGameExists]);
+  }, [address, gameId, createNewGame, restoreGameState, checkGameExists, fetchPlayerStats, setPlayerStats]);
 
   return (
     <GameDirectorContext.Provider
