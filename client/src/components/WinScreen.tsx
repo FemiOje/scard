@@ -2,20 +2,12 @@ import React from "react";
 import "../styles/components/WinScreen.css";
 
 interface WinScreenProps {
-  onPlayAgain: () => void;
-  onCreateGame: () => Promise<void>;
-  isCreatingGame?: boolean;
+  onGoHome: () => void;
 }
 
 export const WinScreen: React.FC<WinScreenProps> = ({
-  onPlayAgain,
-  onCreateGame,
-  isCreatingGame = false,
+  onGoHome,
 }) => {
-  const handlePlayAgain = async () => {
-    await onCreateGame();
-    onPlayAgain();
-  };
 
   return (
     <div className="win-screen">
@@ -39,12 +31,11 @@ export const WinScreen: React.FC<WinScreenProps> = ({
       {/* Button */}
       <div className="win-buttons">
         <button
-          onClick={handlePlayAgain}
-          disabled={isCreatingGame}
+          onClick={onGoHome}
           className="win-button win-button-primary"
         >
-          <span className="button-icon">🔄</span>
-          <span>{isCreatingGame ? "Creating Game..." : "Play Again"}</span>
+          <span className="button-icon">🏠</span>
+          <span>Play Again</span>
         </button>
       </div>
 

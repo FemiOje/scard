@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAccount } from "@starknet-react/core";
 import { HalloweenGrid } from "./HalloweenGrid";
@@ -23,6 +23,7 @@ export const GameScreen: React.FC = () => {
   const { isInitializing, initializationError } = useGameDirector();
   const { gameId: currentGameId, setGameId } = useGameStore();
   const [isMinting, setIsMinting] = useState(false);
+  const addressRef = useRef(address);
   
   const {
     playerPosition,
@@ -38,12 +39,10 @@ export const GameScreen: React.FC = () => {
   
   const { mintGame, gameTokenAddress } = useSystemCalls();
 
-  // Redirect to home if not connected
+  // Keep address ref in sync
   useEffect(() => {
-    if (!address) {
-      navigate("/");
-    }
-  }, [address, navigate]);
+    addressRef.current = address;
+  }, [address]);
 
   // Mint game token and navigate immediately (matching death-mountain's mint function)
   const mint = useCallback(async () => {
@@ -72,22 +71,51 @@ export const GameScreen: React.FC = () => {
     }
   }, [isMinting, address, gameTokenAddress, game_id, currentGameId, mintGame, navigate]);
 
-  // Handle game ID from URL - matching death-mountain pattern
+  // Redirect to home if not connected (with 10s timeout)
+  // Only redirect if there's no gameId to restore
   useEffect(() => {
-    if (!address || isInitializing) {
+    // If we have a gameId, don't redirect - wait for address to restore game
+    if (game_id || currentGameId) {
       return;
     }
 
+    // No gameId - redirect if address not available after 10 seconds
+    if (!address) {
+      const timeoutId = setTimeout(() => {
+        // Use ref to get current address value (avoid closure issue)
+        if (!addressRef.current) {
+          console.log("[GameScreen] No address after 10s timeout, redirecting to home");
+          navigate("/");
+        }
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [address, game_id, currentGameId, navigate]);
+
+  // Handle game ID from URL and minting - matching death-mountain pattern
+  // Sets gameId from URL immediately (even if address not ready), or mints if no gameId
+  useEffect(() => {
+    // If we have a gameId from URL, set it immediately (matches death-mountain line 114)
     if (game_id) {
       if (game_id !== currentGameId) {
+        console.log("[GameScreen] Setting gameId from URL:", game_id);
         setGameId(game_id);
       }
       setIsMinting(false);
+      // GameDirector will initialize once address is available
       return;
     }
 
+    // No gameId - need to mint, but wait for address to be ready
+    if (!address || isInitializing || isMinting) {
+      // Wait for address to be available (matches death-mountain line 109: `if (!account) return;`)
+      return;
+    }
+
+    // Address is ready but no gameId - mint new game (matches death-mountain line 116)
     mint();
-  }, [address, isInitializing, game_id, currentGameId, setGameId, mint]);
+  }, [address, isInitializing, game_id, currentGameId, isMinting, setGameId, mint]);
 
   // Handle exit to home
   const handleExitGame = () => {
@@ -187,17 +215,7 @@ export const GameScreen: React.FC = () => {
   if (gameStatus === "Won" || gameStatus === "Lost") {
     return (
       <WinScreen
-        onPlayAgain={() => navigate("/play")}
-        onCreateGame={async () => {
-          // Mint new game token and navigate (matching death-mountain pattern)
-          try {
-            const tokenId = await mintGame("", 0);
-            navigate(`/play?id=${tokenId}`, { replace: true });
-          } catch (error) {
-            console.error("Failed to mint game:", error);
-          }
-        }}
-        isCreatingGame={isGameLoading}
+        onGoHome={() => navigate("/")}
       />
     );
   }
