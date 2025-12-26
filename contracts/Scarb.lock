@@ -85,6 +85,7 @@ dependencies = [
 [[package]]
 name = "game_components_metagame"
 version = "1.5.1"
+source = "git+https://github.com/FemiOje/game-components?branch=provable-dw#a2a607d1d302a7998ac4e487cc259566f74918a5"
 dependencies = [
  "game_components_minigame",
  "game_components_token",
@@ -96,6 +97,7 @@ dependencies = [
 [[package]]
 name = "game_components_minigame"
 version = "1.5.1"
+source = "git+https://github.com/FemiOje/game-components?branch=provable-dw#a2a607d1d302a7998ac4e487cc259566f74918a5"
 dependencies = [
  "game_components_metagame",
  "game_components_token",
@@ -107,6 +109,7 @@ dependencies = [
 [[package]]
 name = "game_components_test_starknet"
 version = "1.5.1"
+source = "git+https://github.com/FemiOje/game-components?branch=provable-dw#a2a607d1d302a7998ac4e487cc259566f74918a5"
 dependencies = [
  "game_components_metagame",
  "game_components_minigame",
@@ -119,6 +122,7 @@ dependencies = [
 [[package]]
 name = "game_components_token"
 version = "1.5.1"
+source = "git+https://github.com/FemiOje/game-components?branch=provable-dw#a2a607d1d302a7998ac4e487cc259566f74918a5"
 dependencies = [
  "game_components_metagame",
  "game_components_minigame",
@@ -131,6 +135,7 @@ dependencies = [
 [[package]]
 name = "game_components_utils"
 version = "1.5.1"
+source = "git+https://github.com/FemiOje/game-components?branch=provable-dw#a2a607d1d302a7998ac4e487cc259566f74918a5"
 dependencies = [
  "alexandria_encoding",
  "game_components_metagame",

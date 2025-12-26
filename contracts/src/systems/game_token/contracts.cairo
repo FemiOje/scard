@@ -3,7 +3,7 @@
 #[dojo::contract]
 mod game_token_systems {
     use dojo::model::ModelStorage;
-    use dojo::world::{WorldStorage, WorldStorageTrait};
+    use dojo::world::{WorldStorage};
     use game_components_minigame::interface::IMinigameTokenData;
     use game_components_minigame::minigame::MinigameComponent;
     use openzeppelin_introspection::src5::SRC5Component;
@@ -53,7 +53,7 @@ mod game_token_systems {
         denshokan_address: ContractAddress,
         renderer_address: Option<ContractAddress>,
     ) {
-        let mut world: WorldStorage = self.world(@DEFAULT_NS());
+        let mut _world: WorldStorage = self.world(@DEFAULT_NS());
 
         // Use provided renderer address or default to 'renderer_systems'
         // let final_renderer_address = match renderer_address {
