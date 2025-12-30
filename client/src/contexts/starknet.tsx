@@ -9,21 +9,32 @@ import ControllerConnector from "@cartridge/connector/controller";
 import { SessionPolicies } from "@cartridge/controller";
 import manifest from "../../../contracts/manifest_sepolia.json";
 
-const scardGameContract = manifest.contracts.find(
+const gameSystems = manifest.contracts.find(
   (contract) => contract.tag === "scard-game_systems"
 );
 
-if (!scardGameContract?.address) {
+const gameTokenSystems = manifest.contracts.find(
+  (contract) => contract.tag === "scard-game_token_systems"
+);
+
+if (!gameSystems?.address) {
   throw new Error(
     "Scard game contract not found in manifest. Please ensure manifest_sepolia.json contains the scard-game_systems contract."
   );
 }
 
-const SCARD_GAME_CONTRACT = scardGameContract.address;
+if (!gameTokenSystems?.address) {
+  throw new Error(
+    "Scard game contract not found in manifest. Please ensure manifest_sepolia.json contains the scard-game_systems contract."
+  );
+}
+
+const GAME_SYSTEMS = gameSystems.address;
+const GAME_TOKEN_SYSTEMS = gameTokenSystems.address;
 
 const policies: SessionPolicies = {
   contracts: {
-    [SCARD_GAME_CONTRACT]: {
+    [GAME_SYSTEMS]: {
       methods: [
         { name: "create_game", entrypoint: "create_game" },
         { name: "move", entrypoint: "move" },
@@ -31,6 +42,11 @@ const policies: SessionPolicies = {
         { name: "flee", entrypoint: "flee" },
       ],
     },
+    [GAME_TOKEN_SYSTEMS]: {
+      methods : [
+        {name: "mint_game", entrypoint: "mint_game"},
+      ]
+    }
   },
 };
 

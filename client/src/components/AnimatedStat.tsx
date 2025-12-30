@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from "react";
-import "../styles/components/AnimatedStat.css";
 
 interface AnimatedStatProps {
   value: number;
@@ -28,6 +27,7 @@ export const AnimatedStat: React.FC<AnimatedStatProps> = ({
     value: number;
     type: "increase" | "decrease";
   } | null>(null);
+  const [flashType, setFlashType] = useState<"increase" | "decrease" | null>(null);
   const prevValue = useRef<number>(value);
   const statRef = useRef<HTMLDivElement>(null);
 
@@ -44,17 +44,8 @@ export const AnimatedStat: React.FC<AnimatedStatProps> = ({
       }
 
       // Flash effect
-      statRef.current.classList.add("stat-flash");
-      statRef.current.classList.add(
-        changed > 0 ? "stat-flash-increase" : "stat-flash-decrease"
-      );
-      setTimeout(() => {
-        if (statRef.current) {
-          statRef.current.classList.remove("stat-flash");
-          statRef.current.classList.remove("stat-flash-increase");
-          statRef.current.classList.remove("stat-flash-decrease");
-        }
-      }, 500);
+      setFlashType(changed > 0 ? "increase" : "decrease");
+      setTimeout(() => setFlashType(null), 500);
 
       // Animate count-up/count-down
       const startValue = prevValue.current;
@@ -88,29 +79,37 @@ export const AnimatedStat: React.FC<AnimatedStatProps> = ({
   }, [value, showChange]);
 
   return (
-    <div className={`animated-stat ${className}`} ref={statRef}>
-      <div className="animated-stat-content">
-        {icon && <span className="animated-stat-icon">{icon}</span>}
-        <span className="animated-stat-label">{label}</span>
+    <div className={`relative flex flex-col gap-1 ${className}`} ref={statRef}>
+      <div className="flex items-center gap-2">
+        {icon && <span className="text-lg flex-shrink-0">{icon}</span>}
+        <span className="text-sm font-medium text-gray-300 flex-1">{label}</span>
         <span
-          className={`animated-stat-value ${
-            changeIndicator
+          className={`text-sm font-semibold text-white ml-auto transition-colors duration-300 ${changeIndicator
               ? changeIndicator.type === "increase"
-                ? "stat-increase"
-                : "stat-decrease"
+                ? "text-green-400 animate-value-increase"
+                : "text-red-400 animate-value-decrease"
               : ""
-          }`}
+            }`}
         >
           {displayValue}
         </span>
       </div>
       {changeIndicator && (
         <div
-          className={`stat-change-indicator stat-change-${changeIndicator.type}`}
+          className={`absolute -top-6 right-0 text-xs font-bold px-2 py-1 rounded animate-change-indicator-float pointer-events-none z-10 ${changeIndicator.type === "increase"
+              ? "bg-green-500/90 text-white shadow-lg shadow-green-500/50"
+              : "bg-red-500/90 text-white shadow-lg shadow-red-500/50"
+            }`}
         >
           {changeIndicator.type === "increase" ? "+" : "-"}
           {changeIndicator.value}
         </div>
+      )}
+      {flashType && (
+        <div className={`absolute inset-0 animate-stat-flash rounded ${flashType === "increase"
+            ? "shadow-[0_0_15px_rgba(34,197,94,0.6)]"
+            : "shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+          }`} />
       )}
     </div>
   );

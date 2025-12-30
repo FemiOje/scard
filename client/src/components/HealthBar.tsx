@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from "react";
-import "../styles/components/HealthBar.css";
 
 interface HealthBarProps {
   current: number;

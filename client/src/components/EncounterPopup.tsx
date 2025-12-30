@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import "../styles/components/EncounterPopup.css";
 import { HealthBar } from "./HealthBar";
 import { calculateCombatOutcome, isCriticalHealth, willPlayerDie } from "../utils/combatCalculations";
 import { MAX_PLAYER_HEALTH } from "../constants/game";

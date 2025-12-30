@@ -1,5 +1,4 @@
 import React from "react";
-import "../styles/components/PlayerStatsHUD.css";
 import { HealthBar } from "./HealthBar";
 import { AnimatedStat } from "./AnimatedStat";
 import { MAX_PLAYER_HEALTH } from "../constants/game";

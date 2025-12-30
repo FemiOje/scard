@@ -1,5 +1,4 @@
 import React from "react";
-import "../styles/components/WinScreen.css";
 
 interface WinScreenProps {
   onGoHome: () => void;

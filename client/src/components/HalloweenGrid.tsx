@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import "../styles/components/HalloweenGrid.css";
 import { MoveConfirmationPopup } from "./MoveConfirmationPopup";
 import { EncounterPopup } from "./EncounterPopup";
 import { PlayerStatsHUD } from "./PlayerStatsHUD";

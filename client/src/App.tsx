@@ -3,9 +3,9 @@ import { useEffect, useState, useMemo } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ControllerConnector from "@cartridge/connector/controller";
 import { NotificationContainer } from "./components/NotificationToast";
+import { Header } from "./components/Header";
 import { useGameStore } from "./stores/gameStore";
 import { scardRoutes } from "./utils/routes";
-import "./styles/App.css";
 
 function AppContent() {
   const { address, status, connector } = useAccount();
@@ -55,107 +55,16 @@ function AppContent() {
   }, [connector, status]);
 
   return (
-    <div style={{ minHeight: "100vh", position: "relative" }}>
-      {/* Header with Wallet Button - Always visible on all pages */}
-      <header
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          padding: "1rem 2rem",
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          zIndex: 100,
-          background: "rgba(0, 0, 0, 0.5)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(255, 107, 53, 0.3)",
-        }}
-      >
-        {status === "connected" && address ? (
-          <button
-            onClick={() =>
-              (connector as ControllerConnector).controller.openProfile()
-            }
-            style={{
-              padding: "0.75rem 1.5rem",
-              backgroundColor: "rgba(255, 107, 53, 0.9)",
-              color: "white",
-              border: "2px solid #FF6B35",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              boxShadow: "0 0 20px rgba(255, 107, 53, 0.4)",
-              transition: "all 0.3s ease",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 140, 0, 0.9)";
-              e.currentTarget.style.transform = "scale(1.05)";
-              e.currentTarget.style.boxShadow =
-                "0 0 30px rgba(255, 107, 53, 0.6)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 107, 53, 0.9)";
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow =
-                "0 0 20px rgba(255, 107, 53, 0.4)";
-            }}
-          >
-            <span>👤</span>
-            <span>
-              {username || address.slice(0, 6) + "..." + address.slice(-4)}
-            </span>
-          </button>
-        ) : (
-          <button
-            onClick={() => connect({ connector: controllerConnector })}
-            disabled={!isControllerReady}
-            style={{
-              padding: "0.75rem 1.5rem",
-              backgroundColor: isControllerReady
-                ? "rgba(255, 107, 53, 0.9)"
-                : "rgba(108, 117, 125, 0.9)",
-              color: "white",
-              border: isControllerReady
-                ? "2px solid #FF6B35"
-                : "2px solid #6c757d",
-              borderRadius: "8px",
-              cursor: isControllerReady ? "pointer" : "not-allowed",
-              fontSize: "1rem",
-              fontWeight: "bold",
-              boxShadow: isControllerReady
-                ? "0 0 20px rgba(255, 107, 53, 0.4)"
-                : "none",
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (isControllerReady) {
-                e.currentTarget.style.backgroundColor =
-                  "rgba(255, 140, 0, 0.9)";
-                e.currentTarget.style.transform = "scale(1.05)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 30px rgba(255, 107, 53, 0.6)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (isControllerReady) {
-                e.currentTarget.style.backgroundColor =
-                  "rgba(255, 107, 53, 0.9)";
-                e.currentTarget.style.transform = "scale(1)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 20px rgba(255, 107, 53, 0.4)";
-              }
-            }}
-          >
-            {isControllerReady ? "Connect Wallet" : "Loading..."}
-          </button>
-        )}
-      </header>
+    <div className="min-h-screen relative">
+      <Header
+        status={status}
+        address={address}
+        connector={connector}
+        username={username}
+        isControllerReady={isControllerReady}
+        connect={connect}
+        controllerConnector={controllerConnector}
+      />
 
       {/* Route-based content */}
       <Routes>

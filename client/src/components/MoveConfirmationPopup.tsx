@@ -1,5 +1,4 @@
 import React from "react";
-import "../styles/components/MoveConfirmationPopup.css";
 
 interface MoveConfirmationPopupProps {
   targetX: number;
